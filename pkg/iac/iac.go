@@ -7,7 +7,6 @@ import (
 )
 
 func Init(e workflow.Engine) error {
-
 	// Register the "iac test" command
 	if err := iactest.RegisterWorkflows(e); err != nil {
 		return err

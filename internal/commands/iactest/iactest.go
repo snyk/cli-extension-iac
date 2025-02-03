@@ -1,12 +1,40 @@
 package iactest
 
 import (
-	"os"
 	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/spf13/afero"
 
 	"github.com/snyk/go-application-framework/pkg/configuration"
+	"github.com/snyk/go-application-framework/pkg/local_workflows/config_utils"
 	"github.com/snyk/go-application-framework/pkg/workflow"
-	"github.com/spf13/pflag"
+
+	"github.com/snyk/cli-extension-iac/internal/cloudapi"
+	"github.com/snyk/cli-extension-iac/internal/command"
+	"github.com/snyk/cli-extension-iac/internal/engine"
+	"github.com/snyk/cli-extension-iac/internal/git"
+	"github.com/snyk/cli-extension-iac/internal/platform"
+	"github.com/snyk/cli-extension-iac/internal/processor"
+	"github.com/snyk/cli-extension-iac/internal/registry"
+	"github.com/snyk/cli-extension-iac/internal/results"
+	"github.com/snyk/cli-extension-iac/internal/rules"
+	"github.com/snyk/cli-extension-iac/internal/settings"
+)
+
+const (
+	LegacyFlagOutputFile = "iac-test-output-file"
+
+	FeatureFlagNewEngine            = "iacNewEngine"
+	FeatureFlagIntegratedExperience = "iacIntegratedExperience"
+
+	// configuration keys.
+	RulesClientURL   = "snyk_iac_rules_client_url"
+	RulesBundlePath  = "snyk_iac_bundle_path"
+	DisableAnalytics = "snyk_disable_analytics"
+
+	DotSnykPolicy = ".snyk"
 )
 
 var WorkflowID = workflow.NewWorkflowIdentifier("iac.test")
@@ -19,13 +47,10 @@ func RegisterWorkflows(e workflow.Engine) error {
 	if _, err := e.Register(WorkflowID, c, TestWorkflow); err != nil {
 		return fmt.Errorf("error while registering %s workflow: %w", WorkflowID, err)
 	}
+
+	config_utils.AddFeatureFlagToConfig(e, FeatureFlagNewEngine, FeatureFlagNewEngine)
+	config_utils.AddFeatureFlagToConfig(e, FeatureFlagIntegratedExperience, FeatureFlagIntegratedExperience)
 	return nil
-}
-
-func GetIaCTestFlagSet() *pflag.FlagSet {
-	flagSet := pflag.NewFlagSet("snyk-cli-extension-iac-test", pflag.ExitOnError)
-
-	return flagSet
 }
 
 func TestWorkflow(
@@ -38,9 +63,122 @@ func TestWorkflow(
 	args := os.Args[1:]
 
 	logger.Println("IaC Test workflow")
+	if config.GetBool(FeatureFlagNewEngine) || config.GetBool(FeatureFlagIntegratedExperience) {
+		logger.Print("IaC new engine enabled")
+		outputFile, err := runNewEngine(ictx)
+		if err != nil {
+			// TODO: check that the possible errors are properly formatted
+			return nil, err
+		}
+		args = append(args, fmt.Sprintf("--%s=%s", LegacyFlagOutputFile, outputFile))
+	}
 
 	// The legacy workflow is invoked for both the new and legacy IaC engines
 	config.Set(configuration.RAW_CMD_ARGS, args)
 	config.Set(configuration.WORKFLOW_USE_STDIO, true)
 	return workflowEngine.InvokeWithConfig(workflow.NewWorkflowIdentifier("legacycli"), config)
+}
+
+func runNewEngine(ictx workflow.InvocationContext) (string, error) {
+	config := ictx.GetConfiguration()
+	httpClient := ictx.GetNetworkAccess().GetHttpClient()
+	// debugLogger := ictx.GetEnhancedLogger()
+	// logger := ictx.GetLogger()
+
+	fs := afero.NewOsFs()
+
+	policyEngine := engine.Engine{
+		FS: fs,
+	}
+
+	rulesClientURL := config.GetString(RulesClientURL)
+
+	rulesClient := rules.Client{
+		HTTPClient: httpClient,
+		URL:        rulesClientURL,
+	}
+
+	var apiURL = config.GetString(configuration.API_URL)
+
+	registryClient := registry.NewClient(registry.ClientConfig{
+		HTTPClient: httpClient,
+		URL:        apiURL,
+	})
+
+	settingsReader := settings.Reader{
+		RegistryClient: registryClient,
+		Org:            config.GetString(configuration.ORGANIZATION),
+	}
+
+	cachedSettingsReader := settings.CachedReader{
+		Reader: &settingsReader,
+	}
+
+	cloudapiClient := cloudapi.NewClient(cloudapi.ClientConfig{
+		HTTPClient:   httpClient,
+		URL:          apiURL,
+		Version:      "2022-04-13~experimental",
+		IacNewEngine: config.GetBool(FeatureFlagNewEngine),
+	})
+
+	snykPlatform := platform.SnykPlatformClient{
+		RestAPIURL:             apiURL,
+		CloudAPIClient:         cloudapiClient,
+		StubResources:          results.StubResources,
+		SerializeEngineResults: cloudapi.SerializeEngineResults,
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("error getting current working directory: %v", err)
+	}
+	resultsProcessor := processor.ResultsProcessor{
+		SnykPlatform:                 &snykPlatform,
+		Report:                       config.GetBool(FlagReport),
+		SeverityThreshold:            config.GetString(FlagSeverityThreshold),
+		TargetReference:              config.GetString(FlagTargetReference),
+		TargetName:                   config.GetString(FlagTargetName),
+		RemoteRepoUrl:                config.GetString(FlagRemoteRepoURL),
+		GetWd:                        os.Getwd,
+		GetRepoRootDir:               git.GetRepoRootDir,
+		GetOriginUrl:                 git.GetOriginUrl,
+		SettingsReader:               &cachedSettingsReader,
+		PolicyPath:                   filepath.Join(cwd, DotSnykPolicy),
+		IncludePassedVulnerabilities: true,
+		IacNewEngine:                 config.GetBool(FeatureFlagNewEngine),
+	}
+
+	outputFile := config.GetString(configuration.TEMP_DIR_PATH) + "/snyk-iac-test-output.json"
+
+	// TODO: snyk-iac-test binary accepts a list of paths to scan, but we are only passing the current working directory
+	// This is because go-application-framework does not provide a way to pass multiple paths to the workflow
+	paths := []string{cwd}
+
+	cmd := command.Command{
+		Output:                  outputFile,
+		Engine:                  &policyEngine,
+		FS:                      fs,
+		Paths:                   paths,
+		Bundle:                  config.GetString(RulesBundlePath),
+		ResultsProcessor:        &resultsProcessor,
+		SnykCloudEnvironment:    config.GetString(FlagSynkCloudEnvironment),
+		SnykClient:              cloudapiClient,
+		Scan:                    config.GetString(FlagScan),
+		DetectionDepth:          config.GetInt(FlagDepthDetection),
+		VarFile:                 config.GetString(FlagVarFile),
+		SettingsReader:          &cachedSettingsReader,
+		BundleDownloader:        &rulesClient,
+		ReadPolicyEngineVersion: command.ReadRuntimePolicyEngineVersion,
+		ExcludeRawResults:       true,
+		AllowAnalytics:          !config.GetBool(DisableAnalytics),
+		Report:                  config.GetBool(FlagReport),
+		IacNewEngine:            config.GetBool(FeatureFlagNewEngine),
+	}
+
+	if err = cmd.RunWithError(); err != nil {
+		// TODO: proper error message
+		return "", fmt.Errorf("error running snyk-iac-test: %v", err)
+	}
+
+	return outputFile, nil
 }
