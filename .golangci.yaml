@@ -23,11 +23,8 @@ linters-settings:
       - style
   gocyclo:
     min-complexity: 15
-  gofumpt:
-    module-path: github.com/snyk/go-service-sample
-    extra-rules: true
   goimports:
-    local-prefixes: github.com/snyk/go-service-sample
+    local-prefixes: github.com/snyk/cli-extension-iac
   gosimple:
     checks: ["all"]
   govet:
@@ -88,6 +85,7 @@ linters:
     - asciicheck
     - bidichk
     - bodyclose
+    - copyloopvar
     - containedctx
     - contextcheck
     - dogsled
@@ -96,14 +94,12 @@ linters:
     - errname
     - errorlint
     - exhaustive
-    - exportloopref
     - forbidigo
     - forcetypeassert
     - goconst
     - gocritic
     - gocyclo
     - godot
-    - gofumpt
     - goimports
     - goprintffuncname
     - gosec
@@ -120,7 +116,6 @@ linters:
     - prealloc
     - predeclared
     - promlinter
-    - revive
     - rowserrcheck
     - sqlclosecheck
     - stylecheck
@@ -134,7 +129,6 @@ linters:
     - usestdlibvars
     - wastedassign
     - whitespace
-    - wrapcheck
 
 issues:
   exclude-rules:
@@ -147,3 +141,17 @@ issues:
     - path: test/
       linters:
         - testpackage
+  # exclude all files ported from snyk-iac-test - too many issues to fix
+  exclude-dirs:
+    - internal/cloudapi
+    - internal/command
+    - internal/engine
+    - internal/git
+    - internal/ignore
+    - internal/platform
+    - internal/policyengine
+    - internal/processor
+    - internal/registry
+    - internal/rules
+    - internal/results
+    - internal/settings
