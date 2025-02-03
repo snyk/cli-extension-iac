@@ -1,0 +1,47 @@
+{
+  "preferred_version": "{{ .preferredVersion }}",
+  "versions": {
+    "v0.1.5-dev.20220901": {
+      "checksum": "{{ .checksum }}",
+      "url": "{{ .serverURL }}/cli/iac/rules/v0.1.5-dev.20220901/bundle.tar.gz",
+      "min_policy_engine_version": "0.1.1",
+      "release_date": "2022-09-01"
+    },
+    "v0.2.0-dev.20221007": {
+      "checksum": "{{ .checksum }}",
+      "url": "{{ .serverURL }}/cli/iac/rules/v0.2.0-dev.20221007/bundle.tar.gz",
+      "min_policy_engine_version": "0.3.0",
+      "release_date": "2022-10-07"
+    },
+    "v0.2.5-dev.20221013": {
+      "checksum": "{{ .checksum }}",
+      "url": "{{ .serverURL }}/cli/iac/rules/v0.2.5-dev.20221013/bundle.tar.gz",
+      "min_policy_engine_version": "0.3.1",
+      "release_date": "2022-10-13"
+    },
+    "v0.3.0": {
+      "checksum": "{{ .checksum }}",
+      "url": "{{ .serverURL }}/cli/iac/rules/v0.3.0/bundle.tar.gz",
+      "min_policy_engine_version": "0.4.1",
+      "release_date": "2022-12-13"
+    },
+    "v0.3.5": {
+      "checksum": "{{ .checksum }}",
+      "url": "{{ .serverURL }}/cli/iac/rules/v0.3.5/bundle.tar.gz",
+      "min_policy_engine_version": "0.4.1",
+      "release_date": "2022-12-13"
+    },
+    "v0.3.2": {
+      "checksum": "{{ .checksum }}",
+      "url": "{{ .serverURL }}/cli/iac/rules/v0.3.2/bundle.tar.gz",
+      "min_policy_engine_version": "0.4.1",
+      "release_date": "2022-12-13"
+    },
+    "v0.31.0": {
+      "checksum": "{{ .checksum }}",
+      "url": "{{ .serverURL }}/cli/iac/rules/v0.31.0/bundle.tar.gz",
+      "min_policy_engine_version": "0.30.9",
+      "release_date": "2022-12-13"
+    }
+  }
+}

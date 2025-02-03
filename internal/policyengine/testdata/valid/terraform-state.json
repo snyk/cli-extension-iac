@@ -1,0 +1,103 @@
+{
+  "version": 4,
+  "terraform_version": "1.2.3",
+  "serial": 3,
+  "lineage": "a260f150-aa63-571a-6da6-501f858f5f84",
+  "outputs": {},
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "aws_cloudtrail",
+      "name": "fuguetest",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "advanced_event_selector": [],
+            "arn": "arn:aws:cloudtrail:us-east-1:086079820346:trail/tf-trail-fuguetest",
+            "cloud_watch_logs_group_arn": "",
+            "cloud_watch_logs_role_arn": "",
+            "enable_log_file_validation": false,
+            "enable_logging": true,
+            "event_selector": [],
+            "home_region": "us-east-1",
+            "id": "tf-trail-fuguetest",
+            "include_global_service_events": false,
+            "insight_selector": [],
+            "is_multi_region_trail": false,
+            "is_organization_trail": false,
+            "kms_key_id": "",
+            "name": "tf-trail-fuguetest",
+            "s3_bucket_name": "tf-fuguetest-trail",
+            "s3_key_prefix": "prefix",
+            "sns_topic_name": "",
+            "tags": null,
+            "tags_all": {}
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_s3_bucket.fuguetestbucket"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_s3_bucket",
+      "name": "fuguetestbucket",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "acceleration_status": "",
+            "acl": null,
+            "arn": "arn:aws:s3:::tf-fuguetest-trail",
+            "bucket": "tf-fuguetest-trail",
+            "bucket_domain_name": "tf-fuguetest-trail.s3.amazonaws.com",
+            "bucket_prefix": null,
+            "bucket_regional_domain_name": "tf-fuguetest-trail.s3.amazonaws.com",
+            "cors_rule": [],
+            "force_destroy": true,
+            "grant": [
+              {
+                "id": "3215c8b5a7e0444fb48744ea6e35922d5031037f95f98cde3d4c36f7a61a792d",
+                "permissions": [
+                  "FULL_CONTROL"
+                ],
+                "type": "CanonicalUser",
+                "uri": ""
+              }
+            ],
+            "hosted_zone_id": "Z3AQBSTGFYJSTF",
+            "id": "tf-fuguetest-trail",
+            "lifecycle_rule": [],
+            "logging": [],
+            "object_lock_configuration": [],
+            "object_lock_enabled": false,
+            "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"AWSCloudTrailAclCheck\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"cloudtrail.amazonaws.com\"},\"Action\":\"s3:GetBucketAcl\",\"Resource\":\"arn:aws:s3:::tf-fuguetest-trail\"},{\"Sid\":\"AWSCloudTrailWrite\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"cloudtrail.amazonaws.com\"},\"Action\":\"s3:PutObject\",\"Resource\":\"arn:aws:s3:::tf-fuguetest-trail/*\",\"Condition\":{\"StringEquals\":{\"s3:x-amz-acl\":\"bucket-owner-full-control\"}}}]}",
+            "region": "us-east-1",
+            "replication_configuration": [],
+            "request_payer": "BucketOwner",
+            "server_side_encryption_configuration": [],
+            "tags": null,
+            "tags_all": {},
+            "versioning": [
+              {
+                "enabled": false,
+                "mfa_delete": false
+              }
+            ],
+            "website": [],
+            "website_domain": null,
+            "website_endpoint": null
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA=="
+        }
+      ]
+    }
+  ]
+}
