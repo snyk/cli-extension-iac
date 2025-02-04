@@ -5,13 +5,15 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/snyk/cli-extension-iac/internal/engine"
 	"github.com/snyk/cli-extension-iac/internal/platform"
 	"github.com/snyk/cli-extension-iac/internal/processor"
 	"github.com/snyk/cli-extension-iac/internal/results"
 	"github.com/snyk/cli-extension-iac/internal/settings"
 	"github.com/snyk/policy-engine/pkg/models"
-	"github.com/stretchr/testify/require"
 )
 
 type mockSnykPlatform struct {
@@ -150,7 +152,7 @@ func TestWithShareResultsRegistrySuccess(t *testing.T) {
 	snykPlatform := mockSnykPlatform{
 		shareResultsRegistry: func(ctx context.Context, engineResults *results.Results, opts platform.ShareResultsOptions, policyFile string) (*platform.ShareResultsOutput, error) {
 			isShareResultsCalled = true
-			return &platform.ShareResultsOutput{URL: "test-url"}, nil
+			return &platform.ShareResultsOutput{URL: "test-url", ProjectIds: map[string]string{"Infrastructure_as_code_issues": "test_id"}}, nil
 		},
 	}
 
@@ -191,6 +193,7 @@ func TestWithShareResultsRegistrySuccess(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, results)
+	assert.Equal(t, "test_id", results.Metadata.ProjectPublicId)
 	require.True(t, isShareResultsCalled)
 }
 
