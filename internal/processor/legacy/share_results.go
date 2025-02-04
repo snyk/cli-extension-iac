@@ -32,10 +32,10 @@ type ShareResults struct {
 	GetOriginUrl               func(string) (string, error)
 }
 
-func (p *ShareResults) ShareResults(scanResults *results.Results) error {
+func (p *ShareResults) ShareResults(scanResults *results.Results) (registry.ShareResultsResponse, error) {
 	contributors, err := p.listContributors()
 	if err != nil {
-		return fmt.Errorf("list contributors: %v", err)
+		return nil, fmt.Errorf("list contributors: %v", err)
 	}
 
 	attributes := registry.Attributes{
@@ -57,11 +57,12 @@ func (p *ShareResults) ShareResults(scanResults *results.Results) error {
 		shareResultsRequest.Tags = &tags
 	}
 
-	if _, err := p.RegistryClient.ShareResults(shareResultsRequest); err != nil {
-		return fmt.Errorf("share results: %v", err)
+	response, err := p.RegistryClient.ShareResults(shareResultsRequest)
+	if err != nil {
+		return nil, fmt.Errorf("share results: %v", err)
 	}
 
-	return nil
+	return response, nil
 }
 
 func (p *ShareResults) formatTags() []registry.Tag {

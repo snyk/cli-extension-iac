@@ -39,7 +39,8 @@ type ShareResultsOptions struct {
 }
 
 type ShareResultsOutput struct {
-	URL string
+	URL        string
+	ProjectIds map[string]string
 }
 
 func (p *SnykPlatformClient) ShareResults(ctx context.Context, engineResults *engine.Results, opts ShareResultsOptions) (*ShareResultsOutput, error) {
@@ -80,7 +81,7 @@ func (p *SnykPlatformClient) ShareResults(ctx context.Context, engineResults *en
 
 	response, err := p.CloudAPIClient.CreateScan(ctx, opts.OrgPublicID, &request, useInternalEndpoint)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to store scan results: %v", err)
+		return nil, fmt.Errorf("failed to store scan results: %v", err)
 	}
 
 	scanURL := fmt.Sprintf(
@@ -106,6 +107,10 @@ func (p *SnykPlatformClient) ShareResultsRegistry(ctx context.Context, engineRes
 		GetOriginUrl:   git.GetOriginUrl,
 	}
 
-	err := shareResults.ShareResults(engineResults)
-	return nil, err
+	response, err := shareResults.ShareResults(engineResults)
+	if err != nil {
+		return nil, fmt.Errorf("failed to share scan results: %v", err)
+	}
+
+	return &ShareResultsOutput{ProjectIds: response}, nil
 }

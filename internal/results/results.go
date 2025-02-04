@@ -18,8 +18,9 @@ type Results struct {
 }
 
 type Metadata struct {
-	ProjectName  string `json:"projectName,omitempty"`
-	IgnoredCount int    `json:"ignoredCount"`
+	ProjectName     string `json:"projectName,omitempty"`
+	ProjectPublicId string `json:"projectPublicId,omitempty"`
+	IgnoredCount    int    `json:"ignoredCount"`
 }
 
 type Vulnerability struct {

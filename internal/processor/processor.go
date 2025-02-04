@@ -42,6 +42,8 @@ type ResultsProcessor struct {
 	AllowAnalytics               bool
 }
 
+const IacV2TargetFile = "Infrastructure_as_code_issues"
+
 func (p *ResultsProcessor) ProcessResults(rawResults *engine.Results, scanAnalytics results.ScanAnalytics) (*results.Results, error) {
 	if rawResults == nil {
 		return nil, nil
@@ -72,6 +74,15 @@ func (p *ResultsProcessor) ProcessResults(rawResults *engine.Results, scanAnalyt
 	}
 
 	rawResults = filterMissingResources(rawResults)
+	scanResults := results.FromEngineResults(rawResults, p.IncludePassedVulnerabilities)
+	scanResults.Metadata.ProjectName = projectName
+
+	if p.SeverityThreshold != "" {
+		scanResults = filterBySeverityThreshold(scanResults, p.SeverityThreshold)
+	}
+
+	scanResults = filterVulnerabilitiesByIgnores(scanResults, matcher, time.Now())
+	scanResults.ScanAnalytics = scanAnalytics
 
 	if p.Report {
 		log.Printf("share results: project name = %v", projectName)
@@ -95,11 +106,13 @@ func (p *ResultsProcessor) ProcessResults(rawResults *engine.Results, scanAnalyt
 
 			shareResults := results.FromEngineResults(rawResults, false)
 
-			_, err = p.SnykPlatform.ShareResultsRegistry(context.Background(), shareResults, opts, string(policyFile))
+			output, err := p.SnykPlatform.ShareResultsRegistry(context.Background(), shareResults, opts, string(policyFile))
 			if err != nil {
 				return nil, fmt.Errorf("share results: %v", err)
 			}
-			log.Printf("share results: project = %s", shareResults.Metadata.ProjectName)
+
+			// add the created project public id to the scan result to be shown in the cli response
+			scanResults.Metadata.ProjectPublicId = output.ProjectIds[IacV2TargetFile]
 		} else {
 			shareResult, err := p.SnykPlatform.ShareResults(context.Background(), rawResults, opts)
 			if err != nil {
@@ -108,17 +121,6 @@ func (p *ResultsProcessor) ProcessResults(rawResults *engine.Results, scanAnalyt
 			log.Printf("share results: report URI = %s", shareResult.URL)
 		}
 	}
-
-	scanResults := results.FromEngineResults(rawResults, p.IncludePassedVulnerabilities)
-	scanResults.Metadata.ProjectName = projectName
-
-	if p.SeverityThreshold != "" {
-		scanResults = filterBySeverityThreshold(scanResults, p.SeverityThreshold)
-	}
-
-	scanResults = filterVulnerabilitiesByIgnores(scanResults, matcher, time.Now())
-
-	scanResults.ScanAnalytics = scanAnalytics
 
 	return scanResults, nil
 }
