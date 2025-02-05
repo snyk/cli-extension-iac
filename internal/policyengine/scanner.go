@@ -1,8 +1,7 @@
 package engine
 
 import (
-	"log"
-
+	"github.com/rs/zerolog"
 	"github.com/snyk/policy-engine/pkg/input"
 	"github.com/snyk/policy-engine/pkg/models"
 	"github.com/snyk/policy-engine/pkg/postprocess"
@@ -10,9 +9,9 @@ import (
 )
 
 type scanner struct {
-	fs      afero.Fs
-	varFile string
-
+	fs             afero.Fs
+	varFile        string
+	logger         *zerolog.Logger
 	loader         input.Loader
 	detectionDepth int
 	errors         []error
@@ -61,7 +60,7 @@ func (e *scanner) loadPaths(paths []string) {
 	// All errors in Errors() are considered non-fatal
 	for path, errs := range e.loader.Errors() {
 		for _, err := range errs {
-			log.Printf("Non-fatal error: %s", err.Error())
+			e.logger.Warn().Err(err).Msg("Non-fatal error")
 			if unwrapped := unwrapEngineWarning(err, path); unwrapped != nil {
 				e.warnings = append(e.warnings, unwrapped)
 			}

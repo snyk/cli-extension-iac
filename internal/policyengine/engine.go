@@ -4,11 +4,11 @@ import (
 	"context"
 	"io"
 
+	"github.com/rs/zerolog"
 	"github.com/snyk/policy-engine/pkg/bundle"
 	"github.com/snyk/policy-engine/pkg/data"
 	"github.com/snyk/policy-engine/pkg/engine"
 	"github.com/snyk/policy-engine/pkg/input"
-	"github.com/snyk/policy-engine/pkg/logging"
 	"github.com/snyk/policy-engine/pkg/models"
 	"github.com/snyk/policy-engine/pkg/policy"
 	"github.com/spf13/afero"
@@ -21,12 +21,13 @@ type MetadataResult = engine.MetadataResult
 // vulnerability.
 type Engine struct {
 	wrapped *engine.Engine
+	logger  *zerolog.Logger
 }
 
 type EngineOptions struct {
 	SnykBundle        io.ReadCloser
 	CustomRuleBundles []bundle.Reader
-	Logger            logging.Logger
+	Logger            *zerolog.Logger
 }
 
 func NewEngine(ctx context.Context, options EngineOptions) *Engine {
@@ -39,11 +40,13 @@ func NewEngine(ctx context.Context, options EngineOptions) *Engine {
 	wrapped := engine.NewEngine(ctx, &engine.EngineOptions{
 		Providers:     providers,
 		BundleReaders: options.CustomRuleBundles,
-		Logger:        options.Logger,
+		// policy engine logger was never provided in the original snyk-iac-test
+		// it could be added if needed, but it is very noisy
 	})
 
 	engine := Engine{
 		wrapped: wrapped,
+		logger:  options.Logger,
 	}
 
 	return &engine
@@ -81,6 +84,7 @@ func (e *Engine) LoadInput(options RunOptions) (input.Loader, []error, []error) 
 		fs:             options.FS,
 		detectionDepth: options.DetectionDepth,
 		varFile:        options.VarFile,
+		logger:         e.logger,
 	}
 
 	loader, errors, warnings := scanner.scan(options.Paths)

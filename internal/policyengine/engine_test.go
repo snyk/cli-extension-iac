@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/rs/zerolog"
 	engine "github.com/snyk/cli-extension-iac/internal/policyengine"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
@@ -224,8 +225,11 @@ func readDir(t *testing.T, dir string) []string {
 
 func runEngine(t *testing.T, options engine.RunOptions) (*engine.Results, []error) {
 	t.Helper()
+	logger := zerolog.Nop()
 
-	e := engine.NewEngine(context.Background(), engine.EngineOptions{})
+	e := engine.NewEngine(context.Background(), engine.EngineOptions{
+		Logger: &logger,
+	})
 	for _, err := range e.InitializationErrors() {
 		require.NoError(t, err)
 	}

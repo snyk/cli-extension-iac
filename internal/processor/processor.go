@@ -3,10 +3,10 @@ package processor
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/snyk/cli-extension-iac/internal/ignore"
 	"github.com/snyk/cli-extension-iac/internal/platform"
 	engine "github.com/snyk/cli-extension-iac/internal/policyengine"
@@ -40,6 +40,7 @@ type ResultsProcessor struct {
 	IncludePassedVulnerabilities bool
 	IacNewEngine                 bool
 	AllowAnalytics               bool
+	Logger                       *zerolog.Logger
 }
 
 const IacV2TargetFile = "Infrastructure_as_code_issues"
@@ -85,8 +86,8 @@ func (p *ResultsProcessor) ProcessResults(rawResults *engine.Results, scanAnalyt
 	scanResults.ScanAnalytics = scanAnalytics
 
 	if p.Report {
-		log.Printf("share results: project name = %v", projectName)
-		log.Printf("share results: source URI = %v", sourceURI)
+		p.Logger.Info().Msgf("share results: project name = %v", projectName)
+		p.Logger.Info().Msgf("share results: source URI = %v", sourceURI)
 
 		opts := platform.ShareResultsOptions{
 			OrgPublicID:    userSettings.OrgPublicID,
@@ -118,7 +119,7 @@ func (p *ResultsProcessor) ProcessResults(rawResults *engine.Results, scanAnalyt
 			if err != nil {
 				return nil, fmt.Errorf("share results: %v", err)
 			}
-			log.Printf("share results: report URI = %s", shareResult.URL)
+			p.Logger.Info().Msgf("share results: report URI = %s", shareResult.URL)
 		}
 	}
 

@@ -17,9 +17,10 @@ jobs:
       - run: go test ./...
   lint:
     <<: *base_image
+    resource_class: medium
     steps:
       - checkout
-      - run: golangci-lint run ./...
+      - run: golangci-lint run -v ./...
 
   security-scans:
     <<: *base_image

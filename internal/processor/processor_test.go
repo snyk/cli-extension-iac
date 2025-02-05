@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -70,6 +71,7 @@ func TestWithoutShareResults(t *testing.T) {
 
 func TestWithShareResultsSuccess(t *testing.T) {
 	isShareResultsCalled := false
+	logger := zerolog.Nop()
 
 	snykPlatform := mockSnykPlatform{
 		shareResults: func(ctx context.Context, engineResults *engine.Results, opts platform.ShareResultsOptions) (*platform.ShareResultsOutput, error) {
@@ -92,6 +94,7 @@ func TestWithShareResultsSuccess(t *testing.T) {
 		GetOriginUrl:           func(string) (string, error) { return "http://host.xz/path/to/repo.git", nil },
 		SerializeEngineResults: func(results *engine.Results) (string, error) { return "test-serialized-results", nil },
 		SettingsReader:         settingsReader,
+		Logger:                 &logger,
 	}
 
 	results, err := resultsProcessor.ProcessResults(&engine.Results{
@@ -118,6 +121,7 @@ func TestWithShareResultsSuccess(t *testing.T) {
 }
 
 func TestWithShareResultsFailure(t *testing.T) {
+	logger := zerolog.Nop()
 	snykPlatform := mockSnykPlatform{
 		shareResults: func(ctx context.Context, engineResults *engine.Results, opts platform.ShareResultsOptions) (*platform.ShareResultsOutput, error) {
 			return nil, errors.New("error")
@@ -138,6 +142,7 @@ func TestWithShareResultsFailure(t *testing.T) {
 		GetOriginUrl:           func(string) (string, error) { return "http://host.xz/path/to/repo.git", nil },
 		SerializeEngineResults: func(results *engine.Results) (string, error) { return "", errors.New("error") },
 		SettingsReader:         settingsReader,
+		Logger:                 &logger,
 	}
 
 	results, err := resultsProcessor.ProcessResults(&engine.Results{}, results.ScanAnalytics{})
@@ -147,6 +152,7 @@ func TestWithShareResultsFailure(t *testing.T) {
 }
 
 func TestWithShareResultsRegistrySuccess(t *testing.T) {
+	logger := zerolog.Nop()
 	isShareResultsCalled := false
 
 	snykPlatform := mockSnykPlatform{
@@ -171,6 +177,7 @@ func TestWithShareResultsRegistrySuccess(t *testing.T) {
 		SerializeEngineResults: func(results *engine.Results) (string, error) { return "test-serialized-results", nil },
 		SettingsReader:         settingsReader,
 		IacNewEngine:           true,
+		Logger:                 &logger,
 	}
 
 	results, err := resultsProcessor.ProcessResults(&engine.Results{
@@ -198,6 +205,7 @@ func TestWithShareResultsRegistrySuccess(t *testing.T) {
 }
 
 func TestWithShareResultsRegistryFailure(t *testing.T) {
+	logger := zerolog.Nop()
 	snykPlatform := mockSnykPlatform{
 		shareResultsRegistry: func(ctx context.Context, engineResults *results.Results, opts platform.ShareResultsOptions, policyFile string) (*platform.ShareResultsOutput, error) {
 			return nil, errors.New("error")
@@ -219,6 +227,7 @@ func TestWithShareResultsRegistryFailure(t *testing.T) {
 		SerializeEngineResults: func(results *engine.Results) (string, error) { return "", errors.New("error") },
 		SettingsReader:         settingsReader,
 		IacNewEngine:           true,
+		Logger:                 &logger,
 	}
 
 	results, err := resultsProcessor.ProcessResults(&engine.Results{}, results.ScanAnalytics{})

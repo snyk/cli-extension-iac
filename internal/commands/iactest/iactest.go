@@ -82,7 +82,7 @@ func TestWorkflow(
 func runNewEngine(ictx workflow.InvocationContext) (string, error) {
 	config := ictx.GetConfiguration()
 	httpClient := ictx.GetNetworkAccess().GetHttpClient()
-	// debugLogger := ictx.GetEnhancedLogger()
+	debugLogger := ictx.GetEnhancedLogger()
 	// logger := ictx.GetLogger()
 
 	fs := afero.NewOsFs()
@@ -146,6 +146,7 @@ func runNewEngine(ictx workflow.InvocationContext) (string, error) {
 		PolicyPath:                   filepath.Join(cwd, DotSnykPolicy),
 		IncludePassedVulnerabilities: true,
 		IacNewEngine:                 config.GetBool(FeatureFlagNewEngine),
+		Logger:                       debugLogger,
 	}
 
 	outputFile := config.GetString(configuration.TEMP_DIR_PATH) + "/snyk-iac-test-output.json"
@@ -156,6 +157,7 @@ func runNewEngine(ictx workflow.InvocationContext) (string, error) {
 
 	cmd := command.Command{
 		Output:                  outputFile,
+		Logger:                  debugLogger,
 		Engine:                  &policyEngine,
 		FS:                      fs,
 		Paths:                   paths,

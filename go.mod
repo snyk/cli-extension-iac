@@ -6,6 +6,7 @@ require (
 	github.com/go-git/go-git/v5 v5.13.1
 	github.com/golang/mock v1.6.0
 	github.com/hashicorp/go-version v1.7.0
+	github.com/rs/zerolog v1.33.0
 	github.com/snyk/go-application-framework v0.0.0-20250107154543-11ab9f003b38
 	github.com/snyk/policy-engine v0.33.0
 	github.com/spf13/afero v1.11.0
@@ -131,7 +132,6 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
-	github.com/rs/zerolog v1.33.0 // indirect
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect

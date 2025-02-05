@@ -2,11 +2,10 @@ package processor
 
 import (
 	"fmt"
-	"log"
 	"path/filepath"
 	"regexp"
 
-	"github.com/whilp/git-urls"
+	giturls "github.com/whilp/git-urls"
 )
 
 func (p *ResultsProcessor) readWorkingDirectoryName() (string, error) {
@@ -48,7 +47,7 @@ func (p *ResultsProcessor) readRemoteURL() (string, error) {
 func (p *ResultsProcessor) computeProjectURL() (string, error) {
 	remoteURL, err := p.readRemoteURL()
 	if err != nil {
-		log.Printf("warn: read remote URL: %v", err)
+		p.Logger.Warn().Err(err).Msg("read remote URL")
 		return p.readWorkingDirectoryName()
 	}
 	if remoteURL == "" {
@@ -65,7 +64,7 @@ func (p *ResultsProcessor) computeProjectName() (string, error) {
 
 	remoteURL, err := p.readRemoteURL()
 	if err != nil {
-		log.Printf("warn: read remote URL: %v", err)
+		p.Logger.Warn().Err(err).Msg("read remote URL")
 		return p.readWorkingDirectoryName()
 	}
 	if remoteURL == "" {
@@ -74,7 +73,7 @@ func (p *ResultsProcessor) computeProjectName() (string, error) {
 
 	projectName, err := getProjectNameFromGitOriginUrl(remoteURL)
 	if err != nil {
-		log.Printf("warn: compute project name from remote URL: %v", err)
+		p.Logger.Warn().Err(err).Msg("compute project name from remote URL")
 		return p.readWorkingDirectoryName()
 	}
 	if projectName == "" {
