@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
-	"os"
 
+	"github.com/rs/zerolog"
 	"github.com/snyk/policy-engine/pkg/bundle"
 	"github.com/snyk/policy-engine/pkg/models"
 	"github.com/spf13/afero"
@@ -15,15 +14,6 @@ import (
 	engine "github.com/snyk/cli-extension-iac/internal/policyengine"
 	resultspkg "github.com/snyk/cli-extension-iac/internal/results"
 )
-
-// Zerolog or the Policy Engine mess up with the default logger from the
-// standard library, which is used in this program for debugging messages. The
-// following lines restore the default flags and output.
-
-func init() {
-	log.Default().SetOutput(os.Stderr)
-	log.Default().SetFlags(log.LstdFlags)
-}
 
 type Results = engine.Results
 
@@ -41,6 +31,7 @@ type RunOptions struct {
 	Scan                 string
 	DetectionDepth       int
 	VarFile              string
+	Logger               *zerolog.Logger
 }
 
 func (e *Engine) Run(ctx context.Context, options RunOptions) (*Results, resultspkg.ScanAnalytics, []error, []error) {
@@ -57,6 +48,7 @@ func (e *Engine) Run(ctx context.Context, options RunOptions) (*Results, results
 	wrapped := engine.NewEngine(ctx, engine.EngineOptions{
 		SnykBundle:        options.SnykBundle,
 		CustomRuleBundles: options.CustomRuleBundles,
+		Logger:            options.Logger,
 	})
 	// Initialization errors are considered non-fatal. The engine is able to
 	// continue running bundles whichever bundles did successfully initialize.

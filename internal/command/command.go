@@ -7,11 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"runtime/debug"
 	"strings"
 
+	"github.com/rs/zerolog"
 	"github.com/snyk/policy-engine/pkg/bundle"
 	"github.com/snyk/policy-engine/pkg/version"
 	"github.com/spf13/afero"
@@ -40,6 +40,7 @@ type BundleDownloader interface {
 
 type Command struct {
 	Output                  string
+	Logger                  *zerolog.Logger
 	FS                      afero.Fs
 	Engine                  Engine
 	Paths                   []string
@@ -61,7 +62,7 @@ type Command struct {
 
 func (c Command) Run() int {
 	if err := c.RunWithError(); err != nil {
-		log.Printf("error: %v", err)
+		c.Logger.Error().Err(err).Send()
 		return 1
 	}
 
@@ -78,7 +79,7 @@ func (c Command) scan() scanOutput {
 
 	userSettings, err := c.SettingsReader.ReadSettings(ctx)
 	if err != nil {
-		log.Printf("error: read settings: %v", err)
+		c.Logger.Error().Err(err).Msg("read settings")
 		return output.addScanErrors(errReadSettings)
 	}
 
@@ -94,7 +95,7 @@ func (c Command) scan() scanOutput {
 
 	paths, err := normalizePaths(c.Paths)
 	if err != nil {
-		log.Printf("error: normalize paths: %v", err)
+		c.Logger.Error().Err(err).Msg("normalize paths")
 		return output.addScanErrors(errScan)
 	}
 
@@ -122,8 +123,6 @@ func (c Command) scan() scanOutput {
 		return output.addScanErrors(errFetchCustomRulesBundles)
 	}
 
-	proxyEnvVars := NewProxyEnvVars()
-	proxyEnvVars.setSystemDefaults()
 	engineResults, engineAnalytics, engineErrors, engineWarnings := c.Engine.Run(ctx, engine.RunOptions{
 		Paths:                validPaths,
 		SnykBundle:           bundle,
@@ -134,8 +133,8 @@ func (c Command) scan() scanOutput {
 		Scan:                 c.Scan,
 		DetectionDepth:       c.DetectionDepth,
 		VarFile:              c.VarFile,
+		Logger:               c.Logger,
 	})
-	proxyEnvVars.restore()
 
 	if !c.ExcludeRawResults {
 		output = output.setEngineResults(engineResults)
@@ -145,7 +144,7 @@ func (c Command) scan() scanOutput {
 	output = output.addScanWarnings(errorsToScanErrors(engineWarnings)...)
 
 	if scanResults, err := c.ResultsProcessor.ProcessResults(engineResults, engineAnalytics); err != nil {
-		log.Printf("error: process results: %v", err)
+		c.Logger.Error().Err(err).Msg("process results")
 		output = output.addScanErrors(errProcessResults)
 	} else {
 		output = output.setScanResults(scanResults)
@@ -208,7 +207,7 @@ func (c Command) writeOutput(w io.Writer, output scanOutput) error {
 
 func (c Command) openBundle() (io.ReadCloser, error) {
 	if c.Bundle != "" {
-		log.Printf("using the local bundle")
+		c.Logger.Info().Msg("using the local bundle")
 		return c.FS.Open(c.Bundle)
 	}
 
@@ -218,9 +217,9 @@ func (c Command) openBundle() (io.ReadCloser, error) {
 		return nil, fmt.Errorf("find policy-engine dependency version %v", err)
 	}
 
-	log.Println("using policy engine version: ", policyEngineVersion)
-	log.Println("using Terraform version: ", version.TerraformVersion)
-	log.Println("using OPA version: ", version.OPAVersion)
+	c.Logger.Info().Msgf("using policy engine version: %s", policyEngineVersion)
+	c.Logger.Info().Msgf("using Terraform version: %s", version.TerraformVersion)
+	c.Logger.Info().Msgf("using OPA version: %s", version.OPAVersion)
 
 	var buffer bytes.Buffer
 
@@ -338,51 +337,4 @@ func (c nopCloser) Write(p []byte) (n int, err error) {
 
 func (c nopCloser) Close() error {
 	return nil
-}
-
-type proxyEnvVars struct {
-	httpProxy  string
-	httpsProxy string
-	noProxy    string
-
-	systemDefaultHttpProxy  string
-	systemDefaultHttpsProxy string
-	systemDefaultNoProxy    string
-}
-
-func NewProxyEnvVars() proxyEnvVars {
-	return proxyEnvVars{
-		httpProxy:  os.Getenv("HTTP_PROXY"),
-		httpsProxy: os.Getenv("HTTPS_PROXY"),
-		noProxy:    os.Getenv("NO_PROXY"),
-
-		systemDefaultHttpProxy:  os.Getenv("SNYK_SYSTEM_HTTPS_PROXY"),
-		systemDefaultHttpsProxy: os.Getenv("SNYK_SYSTEM_HTTPS_PROXY"),
-		systemDefaultNoProxy:    os.Getenv("SNYK_SYSTEM_NO_PROXY"),
-	}
-}
-
-func (p proxyEnvVars) setSystemDefaults() {
-	setEnvVar("HTTP_PROXY", p.systemDefaultHttpProxy)
-	setEnvVar("HTTPS_PROXY", p.systemDefaultHttpsProxy)
-	setEnvVar("NO_PROXY", p.systemDefaultNoProxy)
-	log.Printf("setting default proxy environment variables to %s", p)
-}
-
-func (p proxyEnvVars) restore() {
-	setEnvVar("HTTP_PROXY", p.httpProxy)
-	setEnvVar("HTTPS_PROXY", p.httpsProxy)
-	setEnvVar("NO_PROXY", p.noProxy)
-	log.Printf("restoring proxy environment variables to %s", p)
-}
-
-func (p proxyEnvVars) String() string {
-	return fmt.Sprintf("HTTP_PROXY=%s, HTTPS_PROXY=%s, NO_PROXY=%s",
-		os.Getenv("HTTP_PROXY"), os.Getenv("HTTPS_PROXY"), os.Getenv("NO_PROXY"))
-}
-
-func setEnvVar(key, value string) {
-	if err := os.Setenv(key, value); err != nil {
-		log.Fatalf("set %s: %v", key, err)
-	}
 }

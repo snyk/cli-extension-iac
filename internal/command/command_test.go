@@ -7,6 +7,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/rs/zerolog"
 	"github.com/snyk/policy-engine/pkg/bundle"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
@@ -222,6 +223,7 @@ func TestNoBundle(t *testing.T) {
 }
 
 func TestBundleDoesNotExist(t *testing.T) {
+	logger := zerolog.Nop()
 	fs := afero.NewMemMapFs()
 	_, _ = fs.Create(outputFilePath)
 
@@ -248,6 +250,7 @@ func TestBundleDoesNotExist(t *testing.T) {
 		Bundle:           "bundle.tar.gz",
 		ResultsProcessor: resultsProcessor,
 		SettingsReader:   settingsReader,
+		Logger:           &logger,
 	}
 
 	require.Equal(t, 0, cmd.Run())
@@ -510,6 +513,7 @@ func TestScanError(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			logger := zerolog.Nop()
 
 			mockEngine := mockEngine{
 				run: func(ctx context.Context, options engine.RunOptions) (*engine.Results, results.ScanAnalytics, []error, []error) {
@@ -545,6 +549,7 @@ func TestScanError(t *testing.T) {
 				Bundle:           "bundle.tar.gz",
 				ResultsProcessor: resultsProcessor,
 				SettingsReader:   settingsReader,
+				Logger:           &logger,
 			}
 
 			require.Equal(t, 0, cmd.Run())
@@ -555,6 +560,7 @@ func TestScanError(t *testing.T) {
 }
 
 func TestSettings(t *testing.T) {
+	logger := zerolog.Nop()
 	fs := afero.NewMemMapFs()
 
 	policyEngine := mockEngine{
@@ -603,6 +609,7 @@ func TestSettings(t *testing.T) {
 		SettingsReader:   settingsReader,
 		SnykClient:       &cloudApiClient,
 		Output:           outputFilePath,
+		Logger:           &logger,
 	}
 
 	require.Equal(t, 0, cmd.Run())
@@ -643,6 +650,7 @@ func TestSettings(t *testing.T) {
 }
 
 func TestSettingsError(t *testing.T) {
+	logger := zerolog.Nop()
 	fs := afero.NewMemMapFs()
 
 	policyEngine := mockEngine{
@@ -671,6 +679,7 @@ func TestSettingsError(t *testing.T) {
 		ResultsProcessor: resultsProcessor,
 		SettingsReader:   settingsReader,
 		Output:           outputFilePath,
+		Logger:           &logger,
 	}
 
 	require.Equal(t, 0, cmd.Run())
@@ -758,6 +767,7 @@ func TestRawResults(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			logger := zerolog.Nop()
 			fs := afero.NewMemMapFs()
 
 			policyEngine := mockEngine{
@@ -807,6 +817,7 @@ func TestRawResults(t *testing.T) {
 				SnykClient:        &cloudApiClient,
 				Output:            outputFilePath,
 				ExcludeRawResults: test.excludeRawResults,
+				Logger:            &logger,
 			}
 
 			require.Equal(t, 0, cmd.Run())
