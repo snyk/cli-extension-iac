@@ -62,7 +62,6 @@ func TestWorkflow(
 	logger := ictx.GetLogger()
 	args := os.Args[1:]
 
-	logger.Println("IaC Test workflow")
 	if config.GetBool(FeatureFlagNewEngine) || config.GetBool(FeatureFlagIntegratedExperience) {
 		logger.Print("IaC new engine enabled")
 		outputFile, err := runNewEngine(ictx)
@@ -81,9 +80,20 @@ func TestWorkflow(
 
 func runNewEngine(ictx workflow.InvocationContext) (string, error) {
 	config := ictx.GetConfiguration()
-	httpClient := ictx.GetNetworkAccess().GetHttpClient()
 	debugLogger := ictx.GetEnhancedLogger()
-	// logger := ictx.GetLogger()
+
+	ui := NewUI(UIConfig{
+		Logger:   debugLogger,
+		Backend:  ictx.GetUserInterface(),
+		Disabled: config.GetBool(FlagJson) || config.GetBool(FlagSarif),
+	})
+	ui.Output(fmt.Sprintf("\n%s\n", renderBold("Snyk Infrastructure As Code")))
+	ui.StartProgressBar("Snyk testing Infrastructure as Code configuration issues.")
+	defer func() {
+		ui.ClearProgressBar()
+	}()
+
+	httpClient := ictx.GetNetworkAccess().GetHttpClient()
 
 	fs := afero.NewOsFs()
 

@@ -14,6 +14,8 @@ const (
 	FlagScan                 = "scan"
 	FlagDepthDetection       = "depth-detection"
 	FlagVarFile              = "var-file"
+	FlagJson                 = "json"
+	FlagSarif                = "sarif"
 )
 
 func GetIaCTestFlagSet() *pflag.FlagSet {
@@ -31,6 +33,8 @@ func GetIaCTestFlagSet() *pflag.FlagSet {
 	flagSet.String(FlagTargetName, "", "Used in Share Results to set or override the project name for the repository. ")
 	flagSet.String(FlagTargetReference, "", "Used in Share Results to specify a reference which differentiates this project, e.g. a branch name or version")
 	flagSet.String(FlagRemoteRepoURL, "", "Used in Share Results to set or override the remote URL for the repository. ")
+	flagSet.Bool(FlagJson, false, "Print results on the console as a JSON data structure")
+	flagSet.Bool(FlagSarif, false, "Return results in SARIF format.")
 
 	return flagSet
 }
