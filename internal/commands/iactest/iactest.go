@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/google/uuid"
 	"github.com/spf13/afero"
 
 	"github.com/snyk/go-application-framework/pkg/configuration"
@@ -142,6 +143,8 @@ func runNewEngine(ictx workflow.InvocationContext) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error getting current working directory: %v", err)
 	}
+	policyPath := GetPolicyFile(config.GetString(FlagPolicyPath), cwd, debugLogger)
+
 	resultsProcessor := processor.ResultsProcessor{
 		SnykPlatform:                 &snykPlatform,
 		Report:                       config.GetBool(FlagReport),
@@ -153,17 +156,15 @@ func runNewEngine(ictx workflow.InvocationContext) (string, error) {
 		GetRepoRootDir:               git.GetRepoRootDir,
 		GetOriginUrl:                 git.GetOriginUrl,
 		SettingsReader:               &cachedSettingsReader,
-		PolicyPath:                   filepath.Join(cwd, DotSnykPolicy),
+		PolicyPath:                   policyPath,
 		IncludePassedVulnerabilities: true,
 		IacNewEngine:                 config.GetBool(FeatureFlagNewEngine),
 		Logger:                       debugLogger,
 	}
 
-	outputFile := config.GetString(configuration.TEMP_DIR_PATH) + "/snyk-iac-test-output.json"
+	outputFile := filepath.Join(config.GetString(configuration.TEMP_DIR_PATH), fmt.Sprintf("snyk-iac-test-output-%s.json", uuid.NewString()))
 
-	// TODO: snyk-iac-test binary accepts a list of paths to scan, but we are only passing the current working directory
-	// This is because go-application-framework does not provide a way to pass multiple paths to the workflow
-	paths := []string{cwd}
+	paths := []string{config.GetString(configuration.INPUT_DIRECTORY)}
 
 	cmd := command.Command{
 		Output:                  outputFile,
