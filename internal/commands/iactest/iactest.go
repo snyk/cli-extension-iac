@@ -139,11 +139,14 @@ func runNewEngine(ictx workflow.InvocationContext) (string, error) {
 		SerializeEngineResults: cloudapi.SerializeEngineResults,
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("error getting current working directory: %v", err)
+	policyPath := ""
+	if !config.GetBool(FlagIgnorePolicy) {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return "", fmt.Errorf("error getting current working directory: %v", err)
+		}
+		policyPath = GetPolicyFile(config.GetString(FlagPolicyPath), cwd, debugLogger)
 	}
-	policyPath := GetPolicyFile(config.GetString(FlagPolicyPath), cwd, debugLogger)
 
 	resultsProcessor := processor.ResultsProcessor{
 		SnykPlatform:                 &snykPlatform,
@@ -188,7 +191,7 @@ func runNewEngine(ictx workflow.InvocationContext) (string, error) {
 		IacNewEngine:            config.GetBool(FeatureFlagNewEngine),
 	}
 
-	if err = cmd.RunWithError(); err != nil {
+	if err := cmd.RunWithError(); err != nil {
 		// TODO: proper error message
 		return "", fmt.Errorf("error running snyk-iac-test: %v", err)
 	}
