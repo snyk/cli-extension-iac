@@ -28,6 +28,7 @@ jobs:
       - checkout
       - prodsec/security_scans:
           mode: auto
+          iac-scan: disabled
 
 workflows:
   version: 2
@@ -39,6 +40,10 @@ workflows:
             - snyk-bot-slack
           channel: iac-plus-alerts
           trusted-branch: main
+          filters:
+            branches:
+              ignore:
+                - main
       - security-scans:
           name: Security Scans
           context:
