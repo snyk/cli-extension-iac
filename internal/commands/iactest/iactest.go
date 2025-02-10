@@ -65,7 +65,12 @@ func TestWorkflow(
 
 	if config.GetBool(FeatureFlagNewEngine) || config.GetBool(FeatureFlagIntegratedExperience) {
 		logger.Print("IaC new engine enabled")
-		outputFile, err := runNewEngine(ictx)
+		cwd, err := os.Getwd()
+		if err != nil {
+			return nil, fmt.Errorf("error getting current working directory: %v", err)
+		}
+		inputPaths := DetermineInputPaths(args, cwd)
+		outputFile, err := runNewEngine(ictx, inputPaths, cwd)
 		if err != nil {
 			// TODO: check that the possible errors are properly formatted
 			return nil, err
@@ -79,7 +84,7 @@ func TestWorkflow(
 	return workflowEngine.InvokeWithConfig(workflow.NewWorkflowIdentifier("legacycli"), config)
 }
 
-func runNewEngine(ictx workflow.InvocationContext) (string, error) {
+func runNewEngine(ictx workflow.InvocationContext, inputPaths []string, cwd string) (string, error) {
 	config := ictx.GetConfiguration()
 	debugLogger := ictx.GetEnhancedLogger()
 
@@ -141,10 +146,6 @@ func runNewEngine(ictx workflow.InvocationContext) (string, error) {
 
 	policyPath := ""
 	if !config.GetBool(FlagIgnorePolicy) {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return "", fmt.Errorf("error getting current working directory: %v", err)
-		}
 		policyPath = GetPolicyFile(config.GetString(FlagPolicyPath), cwd, debugLogger)
 	}
 
@@ -167,14 +168,12 @@ func runNewEngine(ictx workflow.InvocationContext) (string, error) {
 
 	outputFile := filepath.Join(config.GetString(configuration.TEMP_DIR_PATH), fmt.Sprintf("snyk-iac-test-output-%s.json", uuid.NewString()))
 
-	paths := []string{config.GetString(configuration.INPUT_DIRECTORY)}
-
 	cmd := command.Command{
 		Output:                  outputFile,
 		Logger:                  debugLogger,
 		Engine:                  &policyEngine,
 		FS:                      fs,
-		Paths:                   paths,
+		Paths:                   inputPaths,
 		Bundle:                  config.GetString(RulesBundlePath),
 		ResultsProcessor:        &resultsProcessor,
 		SnykCloudEnvironment:    config.GetString(FlagSynkCloudEnvironment),
