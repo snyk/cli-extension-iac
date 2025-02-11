@@ -51,7 +51,7 @@ func (m *MockProgressBar) Clear() error {
 	return args.Error(0)
 }
 
-func TestOutput(t *testing.T) {
+func TestDisplayTitle(t *testing.T) {
 	backend := new(MockUserInterface)
 	backend.On("NewProgressBar").Return(new(MockProgressBar))
 	logger := zerolog.Nop()
@@ -60,10 +60,27 @@ func TestOutput(t *testing.T) {
 		Logger:  &logger,
 	})
 
-	backend.On("Output", "test message").Return(nil)
-	u.Output("test message")
+	expectedOutput := "\nSnyk Infrastructure As Code\n"
+	backend.On("Output", expectedOutput).Return(nil)
+	u.DisplayTitle()
 
-	backend.AssertCalled(t, "Output", "test message")
+	backend.AssertCalled(t, "Output", expectedOutput)
+}
+
+func TestDisplayCompleted(t *testing.T) {
+	backend := new(MockUserInterface)
+	backend.On("NewProgressBar").Return(new(MockProgressBar))
+	logger := zerolog.Nop()
+	u := iactest.NewUI(iactest.UIConfig{
+		Backend: backend,
+		Logger:  &logger,
+	})
+
+	expectedOutput := "✔ Test completed."
+	backend.On("Output", expectedOutput).Return(nil)
+	u.DisplayCompleted()
+
+	backend.AssertCalled(t, "Output", expectedOutput)
 }
 
 func TestProgressBar(t *testing.T) {
@@ -71,8 +88,9 @@ func TestProgressBar(t *testing.T) {
 	progressBar := new(MockProgressBar)
 	logger := zerolog.Nop()
 
+	expectedOutput := "Snyk testing Infrastructure as Code configuration issues."
 	backend.On("NewProgressBar").Return(progressBar)
-	progressBar.On("SetTitle", "Loading").Return()
+	progressBar.On("SetTitle", expectedOutput).Return()
 	progressBar.On("UpdateProgress", ui.InfiniteProgress).Return(nil)
 	progressBar.On("Clear").Return(nil)
 
@@ -81,10 +99,10 @@ func TestProgressBar(t *testing.T) {
 		Logger:  &logger,
 	})
 
-	u.StartProgressBar("Loading")
+	u.StartProgressBar()
 	u.ClearProgressBar()
 
-	progressBar.AssertCalled(t, "SetTitle", "Loading")
+	progressBar.AssertCalled(t, "SetTitle", expectedOutput)
 	progressBar.AssertCalled(t, "UpdateProgress", ui.InfiniteProgress)
 	progressBar.AssertCalled(t, "Clear")
 }
@@ -101,9 +119,10 @@ func TestDisabled(t *testing.T) {
 		Disabled: true,
 	})
 
-	u.Output("test message")
-	u.StartProgressBar("Loading")
+	u.DisplayTitle()
+	u.StartProgressBar()
 	u.ClearProgressBar()
+	u.DisplayCompleted()
 
 	backend.AssertNotCalled(t, "Output")
 	progressBar.AssertNotCalled(t, "SetTitle")
