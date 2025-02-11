@@ -1,9 +1,17 @@
 package iactest
 
 import (
+	"fmt"
+
 	"github.com/charmbracelet/lipgloss"
 	"github.com/rs/zerolog"
 	"github.com/snyk/go-application-framework/pkg/ui"
+)
+
+const (
+	Title          = "Snyk Infrastructure As Code"
+	ProgressText   = "Snyk testing Infrastructure as Code configuration issues."
+	CompletionText = "Test completed."
 )
 
 type iacTestUI struct {
@@ -28,20 +36,28 @@ func NewUI(config UIConfig) *iacTestUI {
 	}
 }
 
-func (u *iacTestUI) Output(message string) {
+func (u *iacTestUI) DisplayTitle() {
 	if u.disabled {
 		return
 	}
 
-	u.backend.Output(message)
+	u.backend.Output(fmt.Sprintf("\n%s\n", renderBold(Title)))
 }
 
-func (u *iacTestUI) StartProgressBar(message string) {
+func (u *iacTestUI) DisplayCompleted() {
 	if u.disabled {
 		return
 	}
 
-	u.bar.SetTitle(message)
+	u.backend.Output(fmt.Sprintf("%s %s", renderGreen("✔"), CompletionText))
+}
+
+func (u *iacTestUI) StartProgressBar() {
+	if u.disabled {
+		return
+	}
+
+	u.bar.SetTitle(ProgressText)
 
 	err := u.bar.UpdateProgress(ui.InfiniteProgress)
 	if err != nil {
@@ -62,4 +78,8 @@ func (u *iacTestUI) ClearProgressBar() {
 
 func renderBold(str string) string {
 	return lipgloss.NewStyle().Bold(true).Render(str)
+}
+
+func renderGreen(str string) string {
+	return lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Render(str)
 }

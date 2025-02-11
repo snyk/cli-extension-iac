@@ -93,10 +93,11 @@ func runNewEngine(ictx workflow.InvocationContext, inputPaths []string, cwd stri
 		Backend:  ictx.GetUserInterface(),
 		Disabled: config.GetBool(FlagJson) || config.GetBool(FlagSarif),
 	})
-	ui.Output(fmt.Sprintf("\n%s\n", renderBold("Snyk Infrastructure As Code")))
-	ui.StartProgressBar("Snyk testing Infrastructure as Code configuration issues.")
+	ui.DisplayTitle()
+	ui.StartProgressBar()
 	defer func() {
 		ui.ClearProgressBar()
+		ui.DisplayCompleted()
 	}()
 
 	httpClient := ictx.GetNetworkAccess().GetHttpClient()
