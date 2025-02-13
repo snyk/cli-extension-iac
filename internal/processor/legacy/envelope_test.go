@@ -152,16 +152,13 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 					{
 						Data: registry.Data{
 							Metadata: registry.RuleMetadata{
-								PublicID:                "rule-id",
-								Title:                   "rule-title",
-								Documentation:           "",
-								IsGeneratedByCustomRule: false,
-								Description:             "",
-								Severity:                "medium",
-								Issue:                   "rule-title",
-								Impact:                  "rule-description",
-								Resolve:                 "",
-								References:              []string{},
+								PublicID:      "rule-id",
+								Title:         "rule-title",
+								Documentation: "",
+								IsCustomRule:  false,
+								Description:   "rule-description",
+								Severity:      "medium",
+								Resolve:       "",
 							},
 							IssueMetadata: registry.IssueMetadata{
 								Type: "terraformconfig",
@@ -178,16 +175,13 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 					{
 						Data: registry.Data{
 							Metadata: registry.RuleMetadata{
-								PublicID:                "rule-id",
-								Title:                   "rule-title",
-								Documentation:           "",
-								IsGeneratedByCustomRule: false,
-								Description:             "",
-								Severity:                "medium",
-								Issue:                   "rule-title",
-								Impact:                  "rule-description",
-								Resolve:                 "",
-								References:              []string{},
+								PublicID:      "rule-id",
+								Title:         "rule-title",
+								Documentation: "",
+								IsCustomRule:  false,
+								Description:   "rule-description",
+								Severity:      "medium",
+								Resolve:       "",
 							},
 							IssueMetadata: registry.IssueMetadata{
 								Type: "terraformconfig",
@@ -204,16 +198,13 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 					{
 						Data: registry.Data{
 							Metadata: registry.RuleMetadata{
-								PublicID:                "rule-id",
-								Title:                   "rule-title",
-								Documentation:           "",
-								IsGeneratedByCustomRule: false,
-								Description:             "",
-								Severity:                "medium",
-								Issue:                   "rule-title",
-								Impact:                  "rule-description",
-								Resolve:                 "",
-								References:              []string{},
+								PublicID:      "rule-id",
+								Title:         "rule-title",
+								Documentation: "",
+								IsCustomRule:  false,
+								Description:   "rule-description",
+								Severity:      "medium",
+								Resolve:       "",
 							},
 							IssueMetadata: registry.IssueMetadata{
 								Type: "terraformconfig",
@@ -364,16 +355,13 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 					{
 						Data: registry.Data{
 							Metadata: registry.RuleMetadata{
-								PublicID:                "rule-id",
-								Title:                   "rule-title",
-								Documentation:           "",
-								IsGeneratedByCustomRule: false,
-								Description:             "",
-								Severity:                "medium",
-								Issue:                   "rule-title",
-								Impact:                  "rule-description",
-								Resolve:                 "",
-								References:              []string{},
+								PublicID:      "rule-id",
+								Title:         "rule-title",
+								Documentation: "",
+								IsCustomRule:  false,
+								Description:   "rule-description",
+								Severity:      "medium",
+								Resolve:       "",
 							},
 							IssueMetadata: registry.IssueMetadata{
 								Type: "terraformconfig",
@@ -390,16 +378,13 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 					{
 						Data: registry.Data{
 							Metadata: registry.RuleMetadata{
-								PublicID:                "rule-id",
-								Title:                   "rule-title",
-								Documentation:           "",
-								IsGeneratedByCustomRule: false,
-								Description:             "",
-								Severity:                "medium",
-								Issue:                   "rule-title",
-								Impact:                  "rule-description",
-								Resolve:                 "",
-								References:              []string{},
+								PublicID:      "rule-id",
+								Title:         "rule-title",
+								Documentation: "",
+								IsCustomRule:  false,
+								Description:   "rule-description",
+								Severity:      "medium",
+								Resolve:       "",
 							},
 							IssueMetadata: registry.IssueMetadata{
 								Type: "terraformconfig",
@@ -416,16 +401,13 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 					{
 						Data: registry.Data{
 							Metadata: registry.RuleMetadata{
-								PublicID:                "rule-id",
-								Title:                   "rule-title",
-								Documentation:           "",
-								IsGeneratedByCustomRule: false,
-								Description:             "",
-								Severity:                "medium",
-								Issue:                   "rule-title",
-								Impact:                  "rule-description",
-								Resolve:                 "",
-								References:              []string{},
+								PublicID:      "rule-id",
+								Title:         "rule-title",
+								Documentation: "",
+								IsCustomRule:  false,
+								Description:   "rule-description",
+								Severity:      "medium",
+								Resolve:       "",
 							},
 							IssueMetadata: registry.IssueMetadata{
 								Type: "terraformconfig",
@@ -575,16 +557,13 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 					{
 						Data: registry.Data{
 							Metadata: registry.RuleMetadata{
-								PublicID:                "rule-id",
-								Title:                   "rule-title",
-								Documentation:           "",
-								IsGeneratedByCustomRule: false,
-								Description:             "",
-								Severity:                "medium",
-								Issue:                   "rule-title",
-								Impact:                  "rule-description",
-								Resolve:                 "",
-								References:              []string{},
+								PublicID:      "rule-id",
+								Title:         "rule-title",
+								Documentation: "",
+								IsCustomRule:  false,
+								Description:   "rule-description",
+								Severity:      "medium",
+								Resolve:       "",
 							},
 							IssueMetadata: registry.IssueMetadata{
 								Type: "terraformconfig",
@@ -601,16 +580,13 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 					{
 						Data: registry.Data{
 							Metadata: registry.RuleMetadata{
-								PublicID:                "rule-id",
-								Title:                   "rule-title",
-								Documentation:           "",
-								IsGeneratedByCustomRule: false,
-								Description:             "",
-								Severity:                "medium",
-								Issue:                   "rule-title",
-								Impact:                  "rule-description",
-								Resolve:                 "",
-								References:              []string{},
+								PublicID:      "rule-id",
+								Title:         "rule-title",
+								Documentation: "",
+								IsCustomRule:  false,
+								Description:   "rule-description",
+								Severity:      "medium",
+								Resolve:       "",
 							},
 							IssueMetadata: registry.IssueMetadata{
 								Type: "terraformconfig",
@@ -627,16 +603,13 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 					{
 						Data: registry.Data{
 							Metadata: registry.RuleMetadata{
-								PublicID:                "rule-id",
-								Title:                   "rule-title",
-								Documentation:           "",
-								IsGeneratedByCustomRule: false,
-								Description:             "",
-								Severity:                "medium",
-								Issue:                   "rule-title",
-								Impact:                  "rule-description",
-								Resolve:                 "",
-								References:              []string{},
+								PublicID:      "rule-id",
+								Title:         "rule-title",
+								Documentation: "",
+								IsCustomRule:  false,
+								Description:   "rule-description",
+								Severity:      "medium",
+								Resolve:       "",
 							},
 							IssueMetadata: registry.IssueMetadata{
 								Type: "terraformconfig",
