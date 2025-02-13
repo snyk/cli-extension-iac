@@ -42,6 +42,7 @@ type Rule struct {
 	Category                string   `json:"category,omitempty"`
 	Documentation           string   `json:"documentation,omitempty"`
 	IsGeneratedByCustomRule bool     `json:"isGeneratedByCustomRule,omitempty"`
+	Controls                []string `json:"controls,omitempty"`
 }
 
 type Resource struct {
@@ -163,6 +164,9 @@ func vulnerabilitiesFromEngineResults(results *engine.Results, includePassed boo
 					vulnerability.Rule.Documentation = "https://security.snyk.io/rules/cloud/" + ruleResults.Id
 				} else {
 					vulnerability.Rule.IsGeneratedByCustomRule = true
+					// In order to keep the output minimal controls are included only for custom rules.
+					// Controls for standard Snyk rules can be obtained through API.
+					vulnerability.Rule.Controls = ruleResults.Controls
 				}
 
 				for _, resource := range ruleResult.Resources {

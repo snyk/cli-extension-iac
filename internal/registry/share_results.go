@@ -121,25 +121,14 @@ type Data struct {
 }
 
 type RuleMetadata struct {
-	PublicID                string       `json:"publicId"`
-	Title                   string       `json:"title"`
-	Documentation           string       `json:"documentation,omitempty"`
-	IsGeneratedByCustomRule bool         `json:"isGeneratedByCustomRule,omitempty"`
-	Description             string       `json:"description,omitempty"`
-	Severity                Severity     `json:"severity"`
-	Issue                   string       `json:"issue"`
-	Impact                  string       `json:"impact"`
-	Resolve                 string       `json:"resolve"`
-	References              []string     `json:"references"`
-	Remediation             *Remediation `json:"remediation,omitempty"`
-	Compliance              [][]string   `json:"compliance,omitempty"`
-}
-
-type Remediation struct {
-	Cloudformation string `json:"cloudformation,omitempty"`
-	Terraform      string `json:"terraform,omitempty"`
-	Arm            string `json:"arm,omitempty"`
-	Kubernetes     string `json:"kubernetes,omitempty"`
+	PublicID      string   `json:"publicId"`
+	Title         string   `json:"title"`
+	Documentation string   `json:"documentation,omitempty"`
+	IsCustomRule  bool     `json:"isCustomRule,omitempty"`
+	Description   string   `json:"description,omitempty"`
+	Severity      Severity `json:"severity"`
+	Resolve       string   `json:"resolve"`
+	Controls      []string `json:"controls,omitempty"`
 }
 
 type Tag struct {
