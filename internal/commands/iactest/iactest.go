@@ -141,6 +141,7 @@ func runNewEngine(ictx workflow.InvocationContext, inputPaths []string, cwd stri
 	snykPlatform := platform.SnykPlatformClient{
 		RestAPIURL:             apiURL,
 		CloudAPIClient:         cloudapiClient,
+		RegistryClient:         registryClient,
 		StubResources:          results.StubResources,
 		SerializeEngineResults: cloudapi.SerializeEngineResults,
 	}
