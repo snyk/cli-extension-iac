@@ -30,6 +30,10 @@ type ResultsProcessor struct {
 	SeverityThreshold            string
 	TargetReference              string
 	TargetName                   string
+	ProjectEnvironment           *string
+	ProjectBusinessCriticality   *string
+	ProjectLifecycle             *string
+	ProjectTags                  *string
 	RemoteRepoUrl                string
 	GetWd                        func() (string, error)
 	GetRepoRootDir               func(string) (string, error)
@@ -90,13 +94,17 @@ func (p *ResultsProcessor) ProcessResults(rawResults *engine.Results, scanAnalyt
 		p.Logger.Info().Msgf("share results: source URI = %v", sourceURI)
 
 		opts := platform.ShareResultsOptions{
-			OrgPublicID:    userSettings.OrgPublicID,
-			Kind:           "cli",
-			Name:           projectName,
-			Branch:         p.TargetReference,
-			SourceURI:      sourceURI,
-			SourceType:     "cli",
-			AllowAnalytics: p.AllowAnalytics,
+			OrgPublicID:                userSettings.OrgPublicID,
+			Kind:                       "cli",
+			Name:                       projectName,
+			Branch:                     p.TargetReference,
+			SourceURI:                  sourceURI,
+			SourceType:                 "cli",
+			AllowAnalytics:             p.AllowAnalytics,
+			ProjectEnvironment:         p.ProjectEnvironment,
+			ProjectBusinessCriticality: p.ProjectBusinessCriticality,
+			ProjectLifecycle:           p.ProjectLifecycle,
+			ProjectTags:                p.ProjectTags,
 		}
 
 		if p.IacNewEngine {

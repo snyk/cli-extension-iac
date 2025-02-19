@@ -139,7 +139,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/skeema/knownhosts v1.3.0 // indirect
 	github.com/snyk/code-client-go v1.11.2 // indirect
-	github.com/snyk/error-catalog-golang-public v0.0.0-20241030160523-0aa643bb7069 // indirect
+	github.com/snyk/error-catalog-golang-public v0.0.0-20250213115103-040fa8e84054 // indirect
 	github.com/snyk/go-httpauth v0.0.0-20231117135515-eb445fea7530 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect

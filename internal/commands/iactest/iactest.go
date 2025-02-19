@@ -2,11 +2,10 @@ package iactest
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
+	"os"
+	"path/filepath"
 
 	"github.com/snyk/go-application-framework/pkg/configuration"
 	"github.com/snyk/go-application-framework/pkg/local_workflows/config_utils"
@@ -64,6 +63,11 @@ func TestWorkflow(
 	args := os.Args[1:]
 
 	if config.GetBool(FeatureFlagNewEngine) || config.GetBool(FeatureFlagIntegratedExperience) {
+		err := validateConfig(config)
+		if err != nil {
+			return nil, err
+		}
+
 		logger.Print("IaC new engine enabled")
 		cwd, err := os.Getwd()
 		if err != nil {
@@ -168,6 +172,31 @@ func runNewEngine(ictx workflow.InvocationContext, inputPaths []string, cwd stri
 		Logger:                       debugLogger,
 	}
 
+	if config.IsSet(FlagProjectEnvironment) {
+		env := config.GetString(FlagProjectEnvironment)
+		resultsProcessor.ProjectEnvironment = &env
+	}
+
+	if config.IsSet(FlagProjectBusinessCriticality) {
+		sev := config.GetString(FlagProjectBusinessCriticality)
+		resultsProcessor.ProjectBusinessCriticality = &sev
+	}
+
+	if config.IsSet(FlagProjectLifecycle) {
+		lifecycle := config.GetString(FlagProjectLifecycle)
+		resultsProcessor.ProjectLifecycle = &lifecycle
+	}
+
+	if config.IsSet(FlagTags) {
+		tags := config.GetString(FlagTags)
+		resultsProcessor.ProjectTags = &tags
+	}
+
+	if config.IsSet(FlagProjectTags) {
+		tags := config.GetString(FlagProjectTags)
+		resultsProcessor.ProjectTags = &tags
+	}
+
 	outputFile := filepath.Join(config.GetString(configuration.TEMP_DIR_PATH), fmt.Sprintf("snyk-iac-test-output-%s.json", uuid.NewString()))
 
 	cmd := command.Command{
@@ -178,7 +207,7 @@ func runNewEngine(ictx workflow.InvocationContext, inputPaths []string, cwd stri
 		Paths:                   inputPaths,
 		Bundle:                  config.GetString(RulesBundlePath),
 		ResultsProcessor:        &resultsProcessor,
-		SnykCloudEnvironment:    config.GetString(FlagSynkCloudEnvironment),
+		SnykCloudEnvironment:    config.GetString(FlagSnykCloudEnvironment),
 		SnykClient:              cloudapiClient,
 		Scan:                    config.GetString(FlagScan),
 		DetectionDepth:          config.GetInt(FlagDepthDetection),
