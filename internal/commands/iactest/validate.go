@@ -4,22 +4,24 @@ import (
 	"fmt"
 	"github.com/snyk/error-catalog-golang-public/cli"
 	"github.com/snyk/go-application-framework/pkg/configuration"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
 var (
-	unsupportedFlagsIaCPlus      = []string{FlagProjectTags, FlagProjectEnvironment, FlagProjectLifecycle, FlagProjectBusinessCriticality}
-	unsupportedFlagsIaCV2        = []string{FlagSnykCloudEnvironment}
-	validOptionsCriticality      = []string{"critical", "high", "medium", "low"}
-	validOptionsProjectEnv       = []string{"frontend", "backend", "internal", "external", "mobile", "saas", "onprem", "hosted", "distributed"}
-	validOptionsProjectLifecycle = []string{"production", "development", "sandbox"}
+	unsupportedFlagsIaCPlus = []string{FlagProjectTags, FlagProjectEnvironment, FlagProjectLifecycle, FlagProjectBusinessCriticality}
+	unsupportedFlagsIaCV2   = []string{FlagSnykCloudEnvironment}
+
+	validOptionsCriticality = map[string]struct{}{
+		"critical": {}, "high": {}, "medium": {}, "low": {}}
+	validOptionsProjectEnv = map[string]struct{}{
+		"frontend": {}, "backend": {}, "internal": {}, "external": {}, "mobile": {}, "saas": {}, "onprem": {}, "hosted": {}, "distributed": {}}
+	validOptionsProjectLifecycle = map[string]struct{}{
+		"production": {}, "development": {}, "sandbox": {}}
 )
 
-type flagWithOpts struct {
-	name         string
-	allowEmpty   bool
-	validOptions []string
-}
+const tfVarExt = ".tfvars"
 
 func validateConfig(config configuration.Configuration) error {
 	if config.GetBool(FeatureFlagNewEngine) {
@@ -58,13 +60,18 @@ func validateIacPlusConfig(config configuration.Configuration) error {
 }
 
 func validateCommonConfig(config configuration.Configuration) error {
-	// TODO validate var-file
+	if config.IsSet(FlagVarFile) {
+		err := validateVarFile(config)
+		if err != nil {
+			return err
+		}
+	}
 
 	if config.IsSet(FlagSeverityThreshold) {
-		flag := flagWithOpts{
-			name:         FlagSeverityThreshold,
-			allowEmpty:   false,
-			validOptions: validOptionsCriticality,
+		flag := flagWithValues{
+			name:        FlagSeverityThreshold,
+			allowEmpty:  false,
+			validValues: validOptionsCriticality,
 		}
 		err := validateFlagValue(config, flag)
 		if err != nil {
@@ -84,59 +91,34 @@ func checkUnsupportedFlags(config configuration.Configuration, unsupportedFlags 
 	return nil
 }
 
-func validateFlagValue(config configuration.Configuration, flag flagWithOpts) error {
-	rawProjectEnvironment := config.GetString(flag.name)
-	if rawProjectEnvironment == "" && flag.allowEmpty {
-		return nil
-	}
-
-	projectEnvs := strings.Split(rawProjectEnvironment, ",")
-
-	valid := make(map[string]bool)
-	for _, projectEnv := range projectEnvs {
-		valid[projectEnv] = false
-		for _, validEnv := range flag.validOptions {
-			if projectEnv == validEnv {
-				valid[projectEnv] = true
-				break
-			}
-		}
-	}
-
-	invalidAttributes := []string{}
-	for k, v := range valid {
-		if v == false {
-			invalidAttributes = append(invalidAttributes, k)
-		}
-	}
-
-	if len(invalidAttributes) > 0 {
-		errMsg := fmt.Sprintf("%d invalid project-environment: %v. Possible values are: %v", len(invalidAttributes), strings.Join(invalidAttributes, ", "), strings.Join(validValues, ", "))
-		if flag.allowEmpty {
-			errMsg += fmt.Sprintf("\nTo clear all existing values, pass no values i.e. %s=", flag)
-		}
-		return cli.NewInvalidFlagOptionError(errMsg)
-	}
-
-	return nil
+type flagWithValues struct {
+	name        string
+	allowEmpty  bool
+	validValues map[string]struct{}
 }
 
+/*
+	This validates config flags that only work together with --report:
+
+--project-environment, --project-business-criticality, --project-lifecycle
+--project-tags or --tags
+*/
 func validateReportConfig(config configuration.Configuration) error {
-	flags := []flagWithOpts{
+	flags := []flagWithValues{
 		{
-			name:         FlagProjectEnvironment,
-			allowEmpty:   true,
-			validOptions: validOptionsProjectEnv,
+			name:        FlagProjectEnvironment,
+			allowEmpty:  true,
+			validValues: validOptionsProjectEnv,
 		},
 		{
-			name:         FlagProjectLifecycle,
-			allowEmpty:   true,
-			validOptions: validOptionsProjectLifecycle,
+			name:        FlagProjectLifecycle,
+			allowEmpty:  true,
+			validValues: validOptionsProjectLifecycle,
 		},
 		{
-			name:         FlagProjectBusinessCriticality,
-			allowEmpty:   true,
-			validOptions: validOptionsCriticality,
+			name:        FlagProjectBusinessCriticality,
+			allowEmpty:  true,
+			validValues: validOptionsCriticality,
 		},
 	}
 
@@ -152,12 +134,13 @@ func validateReportConfig(config configuration.Configuration) error {
 		}
 
 		// validate the flag's value(s)
-		err := validateFlagValue(config, flag.name, flag.validOptions, flag.allowEmpty)
+		err := validateFlagValue(config, flag)
 		if err != nil {
 			return err
 		}
 	}
 
+	// tags need to adhere to a specific KEY=VALUE format
 	err := validateTags(config)
 	if err != nil {
 		return err
@@ -166,16 +149,56 @@ func validateReportConfig(config configuration.Configuration) error {
 	return nil
 }
 
+/*
+	Validates a config flag that can only take one of a specific set of values
+
+e.g. --severity-threshold must be one of low, medium, high, critical
+*/
+func validateFlagValue(config configuration.Configuration, flag flagWithValues) error {
+	rawFlagValue := config.GetString(flag.name)
+	if rawFlagValue == "" && flag.allowEmpty {
+		return nil
+	}
+
+	rawValues := strings.Split(rawFlagValue, ",")
+
+	var invalidValues []string
+	for _, v := range rawValues {
+		if _, exists := flag.validValues[v]; !exists {
+			invalidValues = append(invalidValues, v)
+		}
+	}
+
+	if len(invalidValues) > 0 {
+		errMsg := fmt.Sprintf("%d invalid %s: %v. Possible values are: %v", len(invalidValues), flag.name, strings.Join(invalidValues, ", "), strings.Join(getKeys(flag.validValues), ", "))
+		if flag.allowEmpty {
+			errMsg += fmt.Sprintf("\nTo clear all existing values, pass no values i.e. %s=", flag.name)
+		}
+		return cli.NewInvalidFlagOptionError(errMsg)
+	}
+
+	return nil
+}
+
+/*
+	This validates the --tags and --project-tags config flags
+
+allowed usage: only together with --report and can't be both set at the same time\n
+format: KEY=VALUE
+*/
 func validateTags(config configuration.Configuration) error {
+	// no flag is set no need to validate
 	if !config.IsSet(FlagTags) && !config.IsSet(FlagProjectTags) {
 		return nil
 	}
 
+	// can't have both --tags and --project-tags at the same time
 	if config.IsSet(FlagTags) && config.IsSet(FlagProjectTags) {
 		errMsg := "Only one of --tags or --project-tags may be specified, not both"
 		return cli.NewInvalidFlagOptionError(errMsg)
 	}
 
+	// tags only work with --report
 	if !config.GetBool(FlagReport) {
 		return invalidReportOptionError(FlagProjectTags)
 	}
@@ -189,6 +212,11 @@ func validateTags(config configuration.Configuration) error {
 		rawTags = config.GetString(FlagProjectTags)
 	}
 
+	if rawTags == "" {
+		return nil
+	}
+
+	// tags must have a specific KEY=VALUE format
 	tags := strings.Split(rawTags, ",")
 	for _, t := range tags {
 		tagParts := strings.Split(t, "=")
@@ -202,9 +230,35 @@ func validateTags(config configuration.Configuration) error {
 	return nil
 }
 
+func validateVarFile(config configuration.Configuration) error {
+	varFile := config.GetString(FlagVarFile)
+	_, err := os.Stat(varFile)
+
+	if os.IsNotExist(err) {
+		return cli.NewInvalidFlagOptionError(fmt.Sprintf("We were unable to locate a variable definitions file at: %s. The file at the provided path does not exist", varFile))
+	}
+
+	ext := filepath.Ext(varFile)
+	if ext != tfVarExt {
+		errMsg := fmt.Sprintf("Unsupported value %s provided to --%s. Supported values are: %s", varFile, FlagVarFile, tfVarExt)
+		return cli.NewInvalidFlagOptionError(errMsg)
+	}
+
+	return nil
+}
+
 func invalidReportOptionError(option string) error {
 	errMsg := fmt.Sprintf("--%s can only be used together with --%s ", option, FlagReport)
 	errMsg += fmt.Sprintf("and must contain a '=' with a comma-separated list of values.")
 	errMsg += fmt.Sprintf("To clear all existing values, pass no values i.e. --%s=", option)
 	return cli.NewInvalidFlagOptionError(errMsg)
+}
+
+func getKeys(m map[string]struct{}) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+
+	return keys
 }

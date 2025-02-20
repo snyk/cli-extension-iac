@@ -118,15 +118,15 @@ func (c Command) scan() scanOutput {
 		return output.addScanErrors(errOpenBundle)
 	}
 
-	//customRules, err := c.customRuleBundles(ctx, userSettings.OrgPublicID)
-	//if err != nil {
-	//	return output.addScanErrors(errFetchCustomRulesBundles)
-	//}
+	customRules, err := c.customRuleBundles(ctx, userSettings.OrgPublicID)
+	if err != nil {
+		return output.addScanErrors(errFetchCustomRulesBundles)
+	}
 
 	engineResults, engineAnalytics, engineErrors, engineWarnings := c.Engine.Run(ctx, engine.RunOptions{
 		Paths:                validPaths,
 		SnykBundle:           bundle,
-		CustomRuleBundles:    nil,
+		CustomRuleBundles:    customRules,
 		OrgPublicID:          userSettings.OrgPublicID,
 		SnykCloudEnvironment: c.SnykCloudEnvironment,
 		SnykClient:           c.SnykClient,
