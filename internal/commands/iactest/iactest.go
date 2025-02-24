@@ -99,10 +99,6 @@ func runNewEngine(ictx workflow.InvocationContext, inputPaths []string, cwd stri
 	})
 	ui.DisplayTitle()
 	ui.StartProgressBar()
-	defer func() {
-		ui.ClearProgressBar()
-		ui.DisplayCompleted()
-	}()
 
 	httpClient := ictx.GetNetworkAccess().GetHttpClient()
 
@@ -221,10 +217,17 @@ func runNewEngine(ictx workflow.InvocationContext, inputPaths []string, cwd stri
 		IacNewEngine:            config.GetBool(FeatureFlagNewEngine),
 	}
 
-	if err := cmd.RunWithError(); err != nil {
+	isSuccessful, err := cmd.RunWithError()
+	if err != nil {
 		// TODO: proper error message
 		return "", fmt.Errorf("error running snyk-iac-test: %v", err)
 	}
 
+	//TODO show completed test checkmark if no error + no scan error from RunWithError
+
+	ui.ClearProgressBar()
+	if isSuccessful {
+		ui.DisplayCompleted()
+	}
 	return outputFile, nil
 }
