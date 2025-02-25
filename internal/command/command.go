@@ -61,7 +61,7 @@ type Command struct {
 }
 
 func (c Command) Run() int {
-	if err := c.RunWithError(); err != nil {
+	if _, err := c.RunWithError(); err != nil {
 		c.Logger.Error().Err(err).Send()
 		return 1
 	}
@@ -69,8 +69,21 @@ func (c Command) Run() int {
 	return 0
 }
 
-func (c Command) RunWithError() error {
-	return c.print(c.scan())
+func (c Command) RunWithError() (bool, error) {
+	output := c.scan()
+	isSuccessful := false
+	if len(output.scanErrors) == 0 {
+		isSuccessful = true
+	}
+
+	err := c.print(c.scan())
+	if err != nil {
+		return isSuccessful, err
+	}
+
+	isSuccessful = false
+
+	return isSuccessful, nil
 }
 
 func (c Command) scan() scanOutput {
