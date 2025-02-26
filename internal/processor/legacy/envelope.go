@@ -64,12 +64,11 @@ func convertVulnerabilityToFinding(vulnerability results.Vulnerability) registry
 	finding := registry.Finding{
 		Data: registry.Data{
 			Metadata: registry.RuleMetadata{
-				PublicID:   vulnerability.Rule.ID,
-				Title:      vulnerability.Rule.Title,
-				Severity:   registry.Severity(vulnerability.Severity),
-				Issue:      vulnerability.Rule.Title,
-				Impact:     vulnerability.Rule.Description,
-				References: []string{},
+				PublicID:     vulnerability.Rule.ID,
+				Title:        vulnerability.Rule.Title,
+				Severity:     registry.Severity(vulnerability.Severity),
+				Description:  vulnerability.Rule.Description,
+				IsCustomRule: vulnerability.Rule.IsGeneratedByCustomRule,
 			},
 			IssueMetadata: registry.IssueMetadata{
 				Type: vulnerability.Resource.Kind,
@@ -83,6 +82,13 @@ func convertVulnerabilityToFinding(vulnerability results.Vulnerability) registry
 			},
 		},
 		Type: "iacIssue",
+	}
+
+	// custom rules need additional metadata (that for standard rules is obtained through API)
+	if vulnerability.Rule.IsGeneratedByCustomRule {
+		finding.Data.Metadata.Resolve = vulnerability.Remediation
+		// other metadata fields could be added too if needed for UI filtering: category, labels
+		finding.Data.Metadata.Controls = vulnerability.Rule.Controls
 	}
 
 	return finding
