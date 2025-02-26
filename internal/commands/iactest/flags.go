@@ -1,6 +1,8 @@
 package iactest
 
-import "github.com/spf13/pflag"
+import (
+	"github.com/spf13/pflag"
+)
 
 const (
 	FlagOrg                        = "org"
@@ -11,7 +13,7 @@ const (
 	FlagTargetReference            = "target-reference"
 	FlagTargetName                 = "target-name"
 	FlagRemoteRepoURL              = "remote-repo-url"
-	FlagSynkCloudEnvironment       = "snyk-cloud-environment"
+	FlagSnykCloudEnvironment       = "snyk-cloud-environment"
 	FlagScan                       = "scan"
 	FlagDepthDetection             = "depth-detection"
 	FlagVarFile                    = "var-file"
@@ -30,7 +32,7 @@ func GetIaCTestFlagSet() *pflag.FlagSet {
 
 	flagSet.String(FlagOrg, "", "Specify the Organization ID to run commands tied to a specific Snyk Organization.")
 	flagSet.Int(FlagDepthDetection, 0, "Indicate how many levels of subdirectories to search. Must be a number, 1 or greater; zero (0) is the current directory.")
-	flagSet.String(FlagSynkCloudEnvironment, "", "ID of the Snyk Cloud environment to get context for scan.")
+	flagSet.String(FlagSnykCloudEnvironment, "", "ID of the Snyk Cloud environment to get context for scan.")
 	//nolint:lll // Long flag description
 	flagSet.String(FlagScan, "resource-changes", "Use this dedicated option for Terraform plan scanning modes to control whether the scan analyzes the full final state or the proposed changes only.")
 	flagSet.String(FlagVarFile, "", "Use this option to load a terraform variable definitions file that is located in a different directory from the scanned one.")

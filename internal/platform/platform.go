@@ -26,16 +26,20 @@ type SnykPlatformClient struct {
 }
 
 type ShareResultsOptions struct {
-	OrgPublicID    string
-	Kind           string
-	Name           string
-	Branch         string
-	CommitSha      string
-	RunID          string
-	SourceURI      string
-	SourceType     string
-	ProjectID      string
-	AllowAnalytics bool
+	OrgPublicID                string
+	Kind                       string
+	Name                       string
+	Branch                     string
+	CommitSha                  string
+	RunID                      string
+	SourceURI                  string
+	SourceType                 string
+	ProjectID                  string
+	ProjectEnvironment         *string
+	ProjectBusinessCriticality *string
+	ProjectLifecycle           *string
+	ProjectTags                *string
+	AllowAnalytics             bool
 }
 
 type ShareResultsOutput struct {
@@ -97,14 +101,18 @@ func (p *SnykPlatformClient) ShareResults(ctx context.Context, engineResults *en
 
 func (p *SnykPlatformClient) ShareResultsRegistry(ctx context.Context, engineResults *results.Results, opts ShareResultsOptions, policy string) (*ShareResultsOutput, error) {
 	shareResults := &legacy.ShareResults{
-		RegistryClient: p.RegistryClient,
-		AllowAnalytics: opts.AllowAnalytics,
-		Policy:         policy,
-		ProjectName:    opts.Name,
-		RemoteRepoUrl:  opts.SourceURI,
-		GetWd:          os.Getwd,
-		GetRepoRootDir: git.GetRepoRootDir,
-		GetOriginUrl:   git.GetOriginUrl,
+		RegistryClient:             p.RegistryClient,
+		AllowAnalytics:             opts.AllowAnalytics,
+		Policy:                     policy,
+		ProjectName:                opts.Name,
+		RemoteRepoUrl:              opts.SourceURI,
+		GetWd:                      os.Getwd,
+		GetRepoRootDir:             git.GetRepoRootDir,
+		GetOriginUrl:               git.GetOriginUrl,
+		ProjectEnvironment:         opts.ProjectEnvironment,
+		ProjectBusinessCriticality: opts.ProjectBusinessCriticality,
+		ProjectLifecycle:           opts.ProjectLifecycle,
+		ProjectTags:                opts.ProjectTags,
 	}
 
 	response, err := shareResults.ShareResults(engineResults)
