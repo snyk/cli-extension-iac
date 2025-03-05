@@ -46,15 +46,22 @@ type Rule struct {
 }
 
 type Resource struct {
-	ID            string            `json:"id"`
-	Type          string            `json:"type"`
-	Kind          string            `json:"kind"`
-	Path          []any             `json:"path,omitempty"`
-	FormattedPath string            `json:"formattedPath,omitempty"`
-	File          string            `json:"file,omitempty"`
-	Line          int               `json:"line,omitempty"`
-	Column        int               `json:"column,omitempty"`
-	Tags          map[string]string `json:"tags,omitempty"`
+	ID             string            `json:"id"`
+	Type           string            `json:"type"`
+	Kind           string            `json:"kind"`
+	Path           []any             `json:"path,omitempty"`
+	FormattedPath  string            `json:"formattedPath,omitempty"`
+	File           string            `json:"file,omitempty"`
+	Line           int               `json:"line,omitempty"`
+	Column         int               `json:"column,omitempty"`
+	Tags           map[string]string `json:"tags,omitempty"`
+	SourceLocation []Location        `json:"sourceLocation,omitempty"`
+}
+
+type Location struct {
+	File   string `json:"file,omitempty"`
+	Line   int    `json:"line,omitempty"`
+	Column int    `json:"column,omitempty"`
 }
 
 type ScanAnalytics struct {
@@ -188,6 +195,16 @@ func vulnerabilitiesFromEngineResults(results *engine.Results, includePassed boo
 						vulnerability.Resource.Line = location.Line
 						vulnerability.Resource.Column = location.Column
 					}
+
+					var sourceLocation []Location
+					for _, loc := range resource.Location {
+						sourceLocation = append(sourceLocation, Location{
+							File:   loc.Filepath,
+							Line:   loc.Line,
+							Column: loc.Column,
+						})
+					}
+					vulnerability.Resource.SourceLocation = sourceLocation
 
 					if result.Input.Resources != nil {
 						if resourcesByType, typeExists := result.Input.Resources[resource.Type]; typeExists {
