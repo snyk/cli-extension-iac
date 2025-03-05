@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
-
 	"github.com/snyk/cli-extension-iac/internal/git"
+	"github.com/snyk/cli-extension-iac/internal/results"
+	"net/http"
 )
 
 func (c *Client) ShareResults(req ShareResultsRequest) (ShareResultsResponse, error) {
@@ -103,11 +103,13 @@ type ResourceInfo struct {
 }
 
 type IssueMetadata struct {
-	Type         string       `json:"type,omitempty"`
-	File         string       `json:"file"`
-	ResourcePath string       `json:"resourcePath"`
-	ResourceInfo ResourceInfo `json:"resourceInfo,omitempty"`
-	LineNumber   int          `json:"lineNumber"`
+	Type           string             `json:"type,omitempty"`
+	File           string             `json:"file"`
+	ResourcePath   string             `json:"resourcePath"`
+	ResourceInfo   ResourceInfo       `json:"resourceInfo,omitempty"`
+	LineNumber     int                `json:"lineNumber"`
+	ColumnNumber   int                `json:"columnNumber"`
+	SourceLocation []results.Location `json:"sourceLocation,omitempty"`
 }
 
 type Finding struct {
