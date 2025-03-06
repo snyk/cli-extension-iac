@@ -108,6 +108,13 @@ func TestResultsVulnerabilities(t *testing.T) {
 						File:          "attribute-file",
 						Line:          3,
 						Column:        4,
+						SourceLocation: []results.Location{
+							{
+								File:   "resource-file",
+								Line:   1,
+								Column: 2,
+							},
+						},
 					},
 				},
 			},
@@ -246,11 +253,11 @@ func TestResultsVulnerabilities(t *testing.T) {
 								},
 								Category: "rule-category",
 								Labels:   []string{"rule-label"}, References: []models.RuleResultsReference{
-									{
-										Url:   "http://fake/rule-reference",
-										Title: "rule-reference",
-									},
+								{
+									Url:   "http://fake/rule-reference",
+									Title: "rule-reference",
 								},
+							},
 							},
 						},
 					},
@@ -594,6 +601,18 @@ func TestResultsPassedVulnerabilities(t *testing.T) {
 						File:          "attribute-file",
 						Line:          3,
 						Column:        4,
+						SourceLocation: []results.Location{
+							{
+								File:   "attribute-file",
+								Line:   3,
+								Column: 4,
+							},
+							{
+								File:   "resource-file",
+								Line:   1,
+								Column: 2,
+							},
+						},
 					},
 				},
 			},
