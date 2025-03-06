@@ -225,11 +225,20 @@ func vulnerabilitiesFromEngineResults(results *engine.Results, includePassed boo
 					vulnerability.Resource.Path = attribute.Path
 					vulnerability.Resource.FormattedPath = formattedPath(ruleResults.Id, resource.Id, attribute.Path)
 
-					if attribute.Location != nil {
+					if attribute.Location != nil && (attribute.Location.Line != vulnerability.Resource.Line || attribute.Location.Column != vulnerability.Resource.Column || attribute.Location.Filepath != vulnerability.Resource.File) {
 						location := attribute.Location
 						vulnerability.Resource.File = location.Filepath
 						vulnerability.Resource.Line = location.Line
 						vulnerability.Resource.Column = location.Column
+
+						sourceLocation = append([]Location{
+							{
+								File:   location.Filepath,
+								Line:   location.Line,
+								Column: location.Column,
+							},
+						}, vulnerability.Resource.SourceLocation...)
+						vulnerability.Resource.SourceLocation = sourceLocation
 					}
 
 					*vulnerabilitiesToAddTo = append(*vulnerabilitiesToAddTo, vulnerability)
