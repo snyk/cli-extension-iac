@@ -18,7 +18,7 @@ func (m *MockUserInterface) Output(message string) error {
 	return args.Error(0)
 }
 
-func (m *MockUserInterface) OutputError(err error) error {
+func (m *MockUserInterface) OutputError(err error, opts ...ui.Opts) error {
 	args := m.Called(err)
 	return args.Error(0)
 }
