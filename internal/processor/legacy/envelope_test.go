@@ -40,7 +40,14 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 							Kind:          "terraformconfig",
 							File:          "resource-file",
 							Line:          41,
-							Column:        42,
+							Column:        22,
+							SourceLocation: []results.Location{
+								{
+									Line:   41,
+									Column: 22,
+									File:   "resource-file",
+								},
+							},
 						},
 						{
 							ID:            "second-resource.id",
@@ -49,8 +56,20 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 							FormattedPath: "second-resource.resource[id].attribute.nested_attribute",
 							Kind:          "terraformconfig",
 							File:          "resource-file",
-							Line:          41,
-							Column:        42,
+							Line:          1,
+							Column:        2,
+							SourceLocation: []results.Location{
+								{
+									Line:   1,
+									Column: 2,
+									File:   "resource-file",
+								},
+								{
+									Line:   10,
+									Column: 42,
+									File:   "main-file",
+								},
+							},
 						},
 						{
 							ID:            "another-resource.id",
@@ -59,8 +78,15 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 							FormattedPath: "another-resource.resource[id].attribute.nested_attribute",
 							Kind:          "terraformconfig",
 							File:          "another-resource-file",
-							Line:          41,
-							Column:        42,
+							Line:          2,
+							Column:        2,
+							SourceLocation: []results.Location{
+								{
+									Line:   2,
+									Column: 2,
+									File:   "another-resource-file",
+								},
+							},
 						},
 					},
 					Vulnerabilities: []results.Vulnerability{
@@ -84,8 +110,15 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 								FormattedPath: "first-resource.resource[id].attribute.nested_attribute",
 								File:          "resource-file",
 								Kind:          "terraformconfig",
-								Line:          1,
-								Column:        2,
+								Line:          41,
+								Column:        22,
+								SourceLocation: []results.Location{
+									{
+										Line:   41,
+										Column: 22,
+										File:   "resource-file",
+									},
+								},
 							},
 						},
 						{
@@ -110,6 +143,18 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 								Kind:          "terraformconfig",
 								Line:          1,
 								Column:        2,
+								SourceLocation: []results.Location{
+									{
+										Line:   1,
+										Column: 2,
+										File:   "resource-file",
+									},
+									{
+										Line:   10,
+										Column: 42,
+										File:   "main-file",
+									},
+								},
 							},
 						},
 						{
@@ -134,6 +179,13 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 								Kind:          "terraformconfig",
 								Line:          2,
 								Column:        2,
+								SourceLocation: []results.Location{
+									{
+										Line:   2,
+										Column: 2,
+										File:   "another-resource-file",
+									},
+								},
 							},
 						},
 					},
@@ -167,7 +219,15 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 									Type: "first-resource-type",
 								},
 								ResourcePath: "first-resource.resource[id].attribute.nested_attribute",
-								LineNumber:   1,
+								LineNumber:   41,
+								ColumnNumber: 22,
+								SourceLocation: []registry.Location{
+									{
+										LineNumber:   41,
+										ColumnNumber: 22,
+										File:         "resource-file",
+									},
+								},
 							},
 						},
 						Type: "iacIssue",
@@ -191,6 +251,19 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 								},
 								ResourcePath: "second-resource.resource[id].attribute.nested_attribute",
 								LineNumber:   1,
+								ColumnNumber: 2,
+								SourceLocation: []registry.Location{
+									{
+										LineNumber:   1,
+										ColumnNumber: 2,
+										File:         "resource-file",
+									},
+									{
+										LineNumber:   10,
+										ColumnNumber: 42,
+										File:         "main-file",
+									},
+								},
 							},
 						},
 						Type: "iacIssue",
@@ -214,6 +287,14 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 								},
 								ResourcePath: "another-resource.resource[id].attribute.nested_attribute",
 								LineNumber:   2,
+								ColumnNumber: 2,
+								SourceLocation: []registry.Location{
+									{
+										LineNumber:   2,
+										ColumnNumber: 2,
+										File:         "another-resource-file",
+									},
+								},
 							},
 						},
 						Type: "iacIssue",
@@ -242,8 +323,15 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 							FormattedPath: "first-resource.resource[id].attribute.nested_attribute",
 							Kind:          "terraformconfig",
 							File:          "resource-file",
-							Line:          41,
-							Column:        42,
+							Line:          1,
+							Column:        2,
+							SourceLocation: []results.Location{
+								{
+									File:   "resource-file",
+									Line:   1,
+									Column: 2,
+								},
+							},
 						},
 						{
 							ID:            "second-resource.id",
@@ -252,8 +340,15 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 							FormattedPath: "second-resource.resource[id].attribute.nested_attribute",
 							Kind:          "terraformconfig",
 							File:          "resource-file",
-							Line:          41,
-							Column:        42,
+							Line:          1,
+							Column:        2,
+							SourceLocation: []results.Location{
+								{
+									File:   "resource-file",
+									Line:   1,
+									Column: 2,
+								},
+							},
 						},
 						{
 							ID:            "another-resource.id",
@@ -262,8 +357,15 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 							FormattedPath: "another-resource.resource[id].attribute.nested_attribute",
 							Kind:          "terraformconfig",
 							File:          "another-resource-file",
-							Line:          41,
-							Column:        42,
+							Line:          2,
+							Column:        2,
+							SourceLocation: []results.Location{
+								{
+									File:   "another-resource-file",
+									Line:   2,
+									Column: 2,
+								},
+							},
 						},
 					},
 					Vulnerabilities: []results.Vulnerability{
@@ -289,6 +391,13 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 								Kind:          "terraformconfig",
 								Line:          1,
 								Column:        2,
+								SourceLocation: []results.Location{
+									{
+										File:   "resource-file",
+										Line:   1,
+										Column: 2,
+									},
+								},
 							},
 						},
 						{
@@ -313,6 +422,13 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 								Kind:          "terraformconfig",
 								Line:          1,
 								Column:        2,
+								SourceLocation: []results.Location{
+									{
+										File:   "resource-file",
+										Line:   1,
+										Column: 2,
+									},
+								},
 							},
 						},
 						{
@@ -337,6 +453,13 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 								Kind:          "terraformconfig",
 								Line:          2,
 								Column:        2,
+								SourceLocation: []results.Location{
+									{
+										File:   "another-resource-file",
+										Line:   2,
+										Column: 2,
+									},
+								},
 							},
 						},
 					},
@@ -371,6 +494,14 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 								},
 								ResourcePath: "first-resource.resource[id].attribute.nested_attribute",
 								LineNumber:   1,
+								ColumnNumber: 2,
+								SourceLocation: []registry.Location{
+									{
+										LineNumber:   1,
+										ColumnNumber: 2,
+										File:         "resource-file",
+									},
+								},
 							},
 						},
 						Type: "iacIssue",
@@ -394,6 +525,14 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 								},
 								ResourcePath: "second-resource.resource[id].attribute.nested_attribute",
 								LineNumber:   1,
+								ColumnNumber: 2,
+								SourceLocation: []registry.Location{
+									{
+										LineNumber:   1,
+										ColumnNumber: 2,
+										File:         "resource-file",
+									},
+								},
 							},
 						},
 						Type: "iacIssue",
@@ -417,6 +556,14 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 								},
 								ResourcePath: "another-resource.resource[id].attribute.nested_attribute",
 								LineNumber:   2,
+								ColumnNumber: 2,
+								SourceLocation: []registry.Location{
+									{
+										LineNumber:   2,
+										ColumnNumber: 2,
+										File:         "another-resource-file",
+									},
+								},
 							},
 						},
 						Type: "iacIssue",
@@ -445,6 +592,13 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 							File:          "resource-file",
 							Line:          41,
 							Column:        42,
+							SourceLocation: []results.Location{
+								{
+									File:   "resource-file",
+									Line:   41,
+									Column: 42,
+								},
+							},
 						},
 						{
 							ID:            "second-resource.id",
@@ -455,6 +609,13 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 							File:          "resource-file",
 							Line:          41,
 							Column:        42,
+							SourceLocation: []results.Location{
+								{
+									File:   "resource-file",
+									Line:   41,
+									Column: 42,
+								},
+							},
 						},
 						{
 							ID:            "another-resource.id",
@@ -463,8 +624,15 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 							FormattedPath: "another-resource.resource[id].attribute.nested_attribute",
 							Kind:          "terraformconfig",
 							File:          "another-resource-file",
-							Line:          41,
-							Column:        42,
+							Line:          2,
+							Column:        2,
+							SourceLocation: []results.Location{
+								{
+									File:   "another-resource-file",
+									Line:   2,
+									Column: 2,
+								},
+							},
 						},
 					},
 					Vulnerabilities: []results.Vulnerability{
@@ -488,8 +656,15 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 								FormattedPath: "first-resource.resource[id].attribute.nested_attribute",
 								File:          "resource-file",
 								Kind:          "terraformconfig",
-								Line:          1,
-								Column:        2,
+								Line:          41,
+								Column:        42,
+								SourceLocation: []results.Location{
+									{
+										File:   "resource-file",
+										Line:   41,
+										Column: 42,
+									},
+								},
 							},
 						},
 						{
@@ -512,8 +687,15 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 								FormattedPath: "second-resource.resource[id].attribute.nested_attribute",
 								File:          "resource-file",
 								Kind:          "terraformconfig",
-								Line:          1,
-								Column:        2,
+								Line:          41,
+								Column:        42,
+								SourceLocation: []results.Location{
+									{
+										File:   "resource-file",
+										Line:   41,
+										Column: 42,
+									},
+								},
 							},
 						},
 						{
@@ -538,6 +720,13 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 								Kind:          "terraformconfig",
 								Line:          2,
 								Column:        2,
+								SourceLocation: []results.Location{
+									{
+										Line:   2,
+										File:   "another-resource-file",
+										Column: 2,
+									},
+								},
 							},
 						},
 					},
@@ -572,7 +761,15 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 									Type: "first-resource-type",
 								},
 								ResourcePath: "first-resource.resource[id].attribute.nested_attribute",
-								LineNumber:   1,
+								LineNumber:   41,
+								ColumnNumber: 42,
+								SourceLocation: []registry.Location{
+									{
+										File:         "resource-file",
+										LineNumber:   41,
+										ColumnNumber: 42,
+									},
+								},
 							},
 						},
 						Type: "iacIssue",
@@ -595,7 +792,15 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 									Type: "second-resource-type",
 								},
 								ResourcePath: "second-resource.resource[id].attribute.nested_attribute",
-								LineNumber:   1,
+								LineNumber:   41,
+								ColumnNumber: 42,
+								SourceLocation: []registry.Location{
+									{
+										File:         "resource-file",
+										LineNumber:   41,
+										ColumnNumber: 42,
+									},
+								},
 							},
 						},
 						Type: "iacIssue",
@@ -619,6 +824,14 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 								},
 								ResourcePath: "another-resource.resource[id].attribute.nested_attribute",
 								LineNumber:   2,
+								ColumnNumber: 2,
+								SourceLocation: []registry.Location{
+									{
+										File:         "another-resource-file",
+										LineNumber:   2,
+										ColumnNumber: 2,
+									},
+								},
 							},
 						},
 						Type: "iacIssue",
