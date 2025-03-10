@@ -3,6 +3,7 @@ package results
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/snyk/policy-engine/pkg/models"
 	"regexp"
 	"strings"
 
@@ -190,12 +191,13 @@ func vulnerabilitiesFromEngineResults(results *engine.Results, includePassed boo
 					}
 
 					if len(resource.Location) > 0 {
-						location := resource.Location[0]
+						location := resource.Location[0] //location of the resource definition
 						vulnerability.Resource.File = location.Filepath
 						vulnerability.Resource.Line = location.Line
 						vulnerability.Resource.Column = location.Column
 					}
 
+					// add the location traces of the resource, first element being the location of the resource definition
 					var sourceLocation []Location
 					for _, loc := range resource.Location {
 						sourceLocation = append(sourceLocation, Location{
@@ -225,20 +227,26 @@ func vulnerabilitiesFromEngineResults(results *engine.Results, includePassed boo
 					vulnerability.Resource.Path = attribute.Path
 					vulnerability.Resource.FormattedPath = formattedPath(ruleResults.Id, resource.Id, attribute.Path)
 
-					if attribute.Location != nil && (attribute.Location.Line != vulnerability.Resource.Line || attribute.Location.Column != vulnerability.Resource.Column || attribute.Location.Filepath != vulnerability.Resource.File) {
+					if attribute.Location != nil {
 						location := attribute.Location
 						vulnerability.Resource.File = location.Filepath
 						vulnerability.Resource.Line = location.Line
 						vulnerability.Resource.Column = location.Column
 
-						sourceLocation = append([]Location{
-							{
-								File:   location.Filepath,
-								Line:   location.Line,
-								Column: location.Column,
-							},
-						}, vulnerability.Resource.SourceLocation...)
-						vulnerability.Resource.SourceLocation = sourceLocation
+						// add the location of the attribute to the location trace
+						// if the attribute was explicitly specified in the resource -> new location to add to the trace
+						// if the attribute wasn't explicitly specified in the resource -> same location as the resource, already the first element of the trace
+						if len(resource.Location) > 0 && !sameLocation(*attribute.Location, resource.Location[0]) {
+							attributeLocation := []Location{
+								{
+									File:   location.Filepath,
+									Line:   location.Line,
+									Column: location.Column,
+								},
+							}
+							sourceLocation = append(attributeLocation, vulnerability.Resource.SourceLocation...)
+							vulnerability.Resource.SourceLocation = sourceLocation
+						}
 					}
 
 					*vulnerabilitiesToAddTo = append(*vulnerabilitiesToAddTo, vulnerability)
@@ -395,4 +403,8 @@ var requiresInputPrefix = map[string]bool{
 	"SNYK-CC-TF-19": true,
 	"SNYK-CC-TF-45": true,
 	"SNYK-CC-TF-46": true,
+}
+
+func sameLocation(loc1, loc2 models.SourceLocation) bool {
+	return loc1.Filepath == loc2.Filepath && loc1.Line == loc2.Line && loc1.Column == loc2.Column
 }
