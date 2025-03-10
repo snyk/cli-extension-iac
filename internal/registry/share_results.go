@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/snyk/cli-extension-iac/internal/git"
-	"github.com/snyk/cli-extension-iac/internal/results"
 	"net/http"
 )
 
@@ -102,14 +101,20 @@ type ResourceInfo struct {
 	Tags map[string]string `json:"tags,omitempty"`
 }
 
+type Location struct {
+	File         string `json:"file"`
+	LineNumber   int    `json:"lineNumber"`
+	ColumnNumber int    `json:"columnNumber"`
+}
+
 type IssueMetadata struct {
-	Type           string             `json:"type,omitempty"`
-	File           string             `json:"file"`
-	ResourcePath   string             `json:"resourcePath"`
-	ResourceInfo   ResourceInfo       `json:"resourceInfo,omitempty"`
-	LineNumber     int                `json:"lineNumber"`
-	ColumnNumber   int                `json:"columnNumber"`
-	SourceLocation []results.Location `json:"sourceLocation,omitempty"`
+	Type           string       `json:"type,omitempty"`
+	File           string       `json:"file"`
+	ResourcePath   string       `json:"resourcePath"`
+	ResourceInfo   ResourceInfo `json:"resourceInfo,omitempty"`
+	LineNumber     int          `json:"lineNumber"`
+	ColumnNumber   int          `json:"columnNumber"`
+	SourceLocation []Location   `json:"sourceLocation,omitempty"`
 }
 
 type Finding struct {

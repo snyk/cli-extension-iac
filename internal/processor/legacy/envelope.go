@@ -77,10 +77,9 @@ func convertVulnerabilityToFinding(vulnerability results.Vulnerability) registry
 					Type: vulnerability.Resource.Type,
 					Tags: vulnerability.Resource.Tags,
 				},
-				ResourcePath:   vulnerability.Resource.FormattedPath,
-				LineNumber:     vulnerability.Resource.Line,
-				ColumnNumber:   vulnerability.Resource.Column,
-				SourceLocation: vulnerability.Resource.SourceLocation,
+				ResourcePath: vulnerability.Resource.FormattedPath,
+				LineNumber:   vulnerability.Resource.Line,
+				ColumnNumber: vulnerability.Resource.Column,
 			},
 		},
 		Type: "iacIssue",
@@ -92,6 +91,17 @@ func convertVulnerabilityToFinding(vulnerability results.Vulnerability) registry
 		// other metadata fields could be added too if needed for UI filtering: category, labels
 		finding.Data.Metadata.Controls = vulnerability.Rule.Controls
 	}
+
+	// add location trace for the resource
+	var locations []registry.Location
+	for _, l := range vulnerability.Resource.SourceLocation {
+		locations = append(locations, registry.Location{
+			LineNumber:   l.Line,
+			ColumnNumber: l.Column,
+			File:         l.File,
+		})
+	}
+	finding.Data.IssueMetadata.SourceLocation = locations
 
 	return finding
 }

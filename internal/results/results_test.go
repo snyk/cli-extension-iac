@@ -265,11 +265,11 @@ func TestResultsVulnerabilities(t *testing.T) {
 								},
 								Category: "rule-category",
 								Labels:   []string{"rule-label"}, References: []models.RuleResultsReference{
-								{
-									Url:   "http://fake/rule-reference",
-									Title: "rule-reference",
+									{
+										Url:   "http://fake/rule-reference",
+										Title: "rule-reference",
+									},
 								},
-							},
 							},
 						},
 					},
