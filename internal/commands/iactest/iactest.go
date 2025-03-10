@@ -2,11 +2,14 @@ package iactest
 
 import (
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/spf13/afero"
 	"os"
 	"path/filepath"
 
+	"github.com/google/uuid"
+	"github.com/spf13/afero"
+
+	"github.com/snyk/error-catalog-golang-public/cli"
+	"github.com/snyk/error-catalog-golang-public/snyk_errors"
 	"github.com/snyk/go-application-framework/pkg/configuration"
 	"github.com/snyk/go-application-framework/pkg/local_workflows/config_utils"
 	"github.com/snyk/go-application-framework/pkg/workflow"
@@ -59,7 +62,6 @@ func TestWorkflow(
 ) ([]workflow.Data, error) {
 	config := ictx.GetConfiguration()
 	workflowEngine := ictx.GetEngine()
-	logger := ictx.GetLogger()
 	args := os.Args[1:]
 
 	if config.GetBool(FeatureFlagNewEngine) || config.GetBool(FeatureFlagIntegratedExperience) {
@@ -68,7 +70,6 @@ func TestWorkflow(
 			return nil, err
 		}
 
-		logger.Print("IaC new engine enabled")
 		cwd, err := os.Getwd()
 		if err != nil {
 			return nil, fmt.Errorf("error getting current working directory: %v", err)
@@ -76,7 +77,6 @@ func TestWorkflow(
 		inputPaths := DetermineInputPaths(args, cwd)
 		outputFile, err := runNewEngine(ictx, inputPaths, cwd)
 		if err != nil {
-			// TODO: check that the possible errors are properly formatted
 			return nil, err
 		}
 		args = append(args, fmt.Sprintf("--%s=%s", LegacyFlagOutputFile, outputFile))
@@ -208,8 +208,7 @@ func runNewEngine(ictx workflow.InvocationContext, inputPaths []string, cwd stri
 
 	successful, err := cmd.RunWithError()
 	if err != nil {
-		// TODO: proper error message
-		return "", fmt.Errorf("error running snyk-iac-test: %v", err)
+		return "", cli.NewGeneralIACFailureError(err.Error(), snyk_errors.WithCause(err))
 	}
 
 	return outputFile, nil
