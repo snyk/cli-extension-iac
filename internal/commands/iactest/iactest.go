@@ -33,12 +33,14 @@ const (
 	FeatureFlagIntegratedExperience = "iacIntegratedExperience"
 
 	// configuration keys.
-	RulesClientURL   = "snyk_iac_rules_client_url"
-	RulesBundlePath  = "snyk_iac_bundle_path"
-	DisableAnalytics = "snyk_disable_analytics"
+	RulesClientURL  = "snyk_iac_rules_client_url"
+	RulesBundlePath = "snyk_iac_bundle_path"
 
 	DotSnykPolicy = ".snyk"
 )
+
+// injected in the CLI build process
+var internalRulesClientURL string
 
 var WorkflowID = workflow.NewWorkflowIdentifier("iac.test")
 
@@ -65,6 +67,7 @@ func TestWorkflow(
 	args := os.Args[1:]
 
 	if config.GetBool(FeatureFlagNewEngine) || config.GetBool(FeatureFlagIntegratedExperience) {
+		config.AddDefaultValue(RulesClientURL, configuration.StandardDefaultValueFunction(internalRulesClientURL))
 		err := validateConfig(config)
 		if err != nil {
 			return nil, err
@@ -201,7 +204,7 @@ func runNewEngine(ictx workflow.InvocationContext, inputPaths []string, cwd stri
 		BundleDownloader:        &rulesClient,
 		ReadPolicyEngineVersion: command.ReadRuntimePolicyEngineVersion,
 		ExcludeRawResults:       true,
-		AllowAnalytics:          !config.GetBool(DisableAnalytics),
+		AllowAnalytics:          !config.GetBool(configuration.ANALYTICS_DISABLED),
 		Report:                  config.GetBool(FlagReport),
 		IacNewEngine:            config.GetBool(FeatureFlagNewEngine),
 	}
