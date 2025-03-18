@@ -5,7 +5,6 @@ import (
 )
 
 const (
-	FlagOrg                        = "org"
 	FlagReport                     = "report"
 	FlagSeverityThreshold          = "severity-threshold"
 	FlagIgnorePolicy               = "ignore-policy"
@@ -15,7 +14,7 @@ const (
 	FlagRemoteRepoURL              = "remote-repo-url"
 	FlagSnykCloudEnvironment       = "snyk-cloud-environment"
 	FlagScan                       = "scan"
-	FlagDepthDetection             = "depth-detection"
+	FlagDepthDetection             = "detection-depth"
 	FlagVarFile                    = "var-file"
 	FlagJson                       = "json"
 	FlagJsonFileOutput             = "json-file-output"
@@ -25,12 +24,19 @@ const (
 	FlagProjectEnvironment         = "project-environment"
 	FlagProjectLifecycle           = "project-lifecycle"
 	FlagProjectTags                = "project-tags"
+	FlagRules                      = "rules"
 )
 
 func GetIaCTestFlagSet() *pflag.FlagSet {
 	flagSet := pflag.NewFlagSet("snyk-cli-extension-iac-test", pflag.ExitOnError)
 
-	flagSet.String(FlagOrg, "", "Specify the Organization ID to run commands tied to a specific Snyk Organization.")
+	/*
+		The flags declared here are a combination o the flags used in both current IaC and IaC+.
+		Failing to declare a flag here will result in the flag not being recognized by the CLI.
+
+		Flags like --org are not declared here because they are declared in the root command.
+		Adding them here may result in unexpected behavior.
+	*/
 	flagSet.Int(FlagDepthDetection, 0, "Indicate how many levels of subdirectories to search. Must be a number, 1 or greater; zero (0) is the current directory.")
 	flagSet.String(FlagSnykCloudEnvironment, "", "ID of the Snyk Cloud environment to get context for scan.")
 	//nolint:lll // Long flag description
@@ -51,6 +57,7 @@ func GetIaCTestFlagSet() *pflag.FlagSet {
 	flagSet.String(FlagProjectEnvironment, "", "Set the project environment project attribute to one or more values (comma-separated).")
 	flagSet.String(FlagProjectLifecycle, "", "Set the project lifecycle project attribute to one or more values (comma-separated).")
 	flagSet.String(FlagProjectTags, "", "Set the project tags to one or more values (comma-separated key value pairs with an \"=\" separator).")
+	flagSet.String(FlagRules, "", "Path to a directory containing custom rules.")
 
 	return flagSet
 }
