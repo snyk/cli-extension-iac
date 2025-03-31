@@ -38,7 +38,7 @@ workflows:
           name: Scan repository for secrets
           context:
             - snyk-bot-slack
-          channel: iac-plus-alerts
+          channel: snyk-vuln-alerts-iac
           trusted-branch: main
           filters:
             branches:
