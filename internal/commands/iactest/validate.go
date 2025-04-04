@@ -2,11 +2,12 @@ package iactest
 
 import (
 	"fmt"
-	"github.com/snyk/error-catalog-golang-public/cli"
-	"github.com/snyk/go-application-framework/pkg/configuration"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/snyk/error-catalog-golang-public/cli"
+	"github.com/snyk/go-application-framework/pkg/configuration"
 )
 
 var (
@@ -83,6 +84,10 @@ func validateCommonConfig(config configuration.Configuration) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if config.GetString(RulesClientURL) == "" {
+		return cli.NewGeneralIACFailureError("A rule bundle must be provided using the IAC_RULES_URL env var in the CLI build command. Example: IAC_RULES_URL=<url> make build")
 	}
 
 	return nil
