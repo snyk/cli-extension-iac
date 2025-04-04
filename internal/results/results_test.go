@@ -108,6 +108,18 @@ func TestResultsVulnerabilities(t *testing.T) {
 						File:          "attribute-file",
 						Line:          3,
 						Column:        4,
+						SourceLocation: []results.Location{
+							{
+								File:   "attribute-file",
+								Line:   3,
+								Column: 4,
+							},
+							{
+								File:   "resource-file",
+								Line:   1,
+								Column: 2,
+							},
+						},
 					},
 				},
 			},
@@ -173,6 +185,13 @@ func TestResultsVulnerabilities(t *testing.T) {
 						File:          "resource-file",
 						Line:          1,
 						Column:        2,
+						SourceLocation: []results.Location{
+							{
+								File:   "resource-file",
+								Line:   1,
+								Column: 2,
+							},
+						},
 					},
 				},
 			},
@@ -366,6 +385,13 @@ func TestResultsVulnerabilities(t *testing.T) {
 						File:          "resource-file",
 						Line:          1,
 						Column:        2,
+						SourceLocation: []results.Location{
+							{
+								File:   "resource-file",
+								Line:   1,
+								Column: 2,
+							},
+						},
 					},
 				},
 				{
@@ -379,6 +405,13 @@ func TestResultsVulnerabilities(t *testing.T) {
 						File:          "other-resource-file",
 						Line:          10,
 						Column:        20,
+						SourceLocation: []results.Location{
+							{
+								File:   "other-resource-file",
+								Line:   10,
+								Column: 20,
+							},
+						},
 					},
 				},
 			},
@@ -448,6 +481,13 @@ func TestResultsVulnerabilities(t *testing.T) {
 						Kind:          "input-type",
 						Line:          1,
 						Column:        2,
+						SourceLocation: []results.Location{
+							{
+								File:   "resource-file",
+								Line:   1,
+								Column: 2,
+							},
+						},
 						Tags: map[string]string{
 							"test":   "value",
 							"team":   "iac",
@@ -594,6 +634,18 @@ func TestResultsPassedVulnerabilities(t *testing.T) {
 						File:          "attribute-file",
 						Line:          3,
 						Column:        4,
+						SourceLocation: []results.Location{
+							{
+								File:   "attribute-file",
+								Line:   3,
+								Column: 4,
+							},
+							{
+								File:   "resource-file",
+								Line:   1,
+								Column: 2,
+							},
+						},
 					},
 				},
 			},
