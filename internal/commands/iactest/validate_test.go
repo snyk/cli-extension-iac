@@ -1,10 +1,11 @@
 package iactest
 
 import (
-	"github.com/snyk/go-application-framework/pkg/configuration"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/snyk/go-application-framework/pkg/configuration"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateFlagValue(t *testing.T) {
@@ -418,6 +419,14 @@ func TestValidateConfig(t *testing.T) {
 			hasErr: true,
 			desc:   "invalid --var-file for iac+",
 		},
+		{
+			in: map[string]any{
+				FeatureFlagNewEngine: true,
+				RulesClientURL:       "",
+			},
+			hasErr: true,
+			desc:   "empty rules client URL for iac v2",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -485,6 +494,7 @@ func TestValidateVarFile(t *testing.T) {
 
 func setupMockConfig(flagValues map[string]any) configuration.Configuration {
 	config := configuration.New()
+	config.Set(RulesClientURL, "url")
 
 	for key, value := range flagValues {
 		config.Set(key, value)
