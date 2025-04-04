@@ -32,7 +32,7 @@ type ShareResults struct {
 	GetOriginUrl               func(string) (string, error)
 }
 
-func (p *ShareResults) ShareResults(scanResults *results.Results) (registry.ShareResultsResponse, error) {
+func (p *ShareResults) ShareResults(scanResults *results.Results, orgPublicID string) (registry.ShareResultsResponse, error) {
 	contributors, err := p.listContributors()
 	if err != nil {
 		return nil, fmt.Errorf("list contributors: %v", err)
@@ -51,6 +51,7 @@ func (p *ShareResults) ShareResults(scanResults *results.Results) (registry.Shar
 		ScanResults:  []registry.ScanResult{p.convertResultsToEnvelopeScanResult(*scanResults, p.ProjectName, p.Policy)},
 		Contributors: contributors,
 		Attributes:   &attributes,
+		Org:          orgPublicID,
 	}
 
 	if len(tags) != 0 {

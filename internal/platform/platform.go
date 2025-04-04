@@ -115,7 +115,7 @@ func (p *SnykPlatformClient) ShareResultsRegistry(ctx context.Context, engineRes
 		ProjectTags:                opts.ProjectTags,
 	}
 
-	response, err := shareResults.ShareResults(engineResults)
+	response, err := shareResults.ShareResults(engineResults, opts.OrgPublicID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to share scan results: %v", err)
 	}
