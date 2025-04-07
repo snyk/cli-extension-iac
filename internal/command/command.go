@@ -102,10 +102,6 @@ func (c Command) scan() scanOutput {
 		return output.addScanErrors(errEntitlementInfrastructureAsCodeNotEnabled)
 	}
 
-	if c.Report && c.IacNewEngine {
-		return output.addScanErrors(errUnsupportedReport)
-	}
-
 	paths, err := normalizePaths(c.Paths)
 	if err != nil {
 		c.Logger.Error().Err(err).Msg("normalize paths")
