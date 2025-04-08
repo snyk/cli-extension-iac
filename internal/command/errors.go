@@ -58,7 +58,6 @@ const (
 	errorCodeProcessResults errorCode = 2200 + iota
 	errorCodeEntitlementNotEnabled
 	errorCodeReadSettings
-	errorCodeUnsupportedReport
 )
 
 // Warnings
@@ -105,11 +104,6 @@ var errEntitlementInfrastructureAsCodeNotEnabled = scanError{
 var errReadSettings = scanError{
 	Message: "unable to read the IaC organization settings",
 	Code:    errorCodeReadSettings,
-}
-
-var errUnsupportedReport = scanError{
-	Message: "flag --report is not yet supported when iacNewEngine flag is enabled",
-	Code:    errorCodeUnsupportedReport,
 }
 
 func cwdTraversalError(path string) scanError {
