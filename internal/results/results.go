@@ -3,6 +3,7 @@ package results
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/snyk/policy-engine/pkg/models"
 	"regexp"
 	"strings"
 
@@ -46,15 +47,22 @@ type Rule struct {
 }
 
 type Resource struct {
-	ID            string            `json:"id"`
-	Type          string            `json:"type"`
-	Kind          string            `json:"kind"`
-	Path          []any             `json:"path,omitempty"`
-	FormattedPath string            `json:"formattedPath,omitempty"`
-	File          string            `json:"file,omitempty"`
-	Line          int               `json:"line,omitempty"`
-	Column        int               `json:"column,omitempty"`
-	Tags          map[string]string `json:"tags,omitempty"`
+	ID             string            `json:"id"`
+	Type           string            `json:"type"`
+	Kind           string            `json:"kind"`
+	Path           []any             `json:"path,omitempty"`
+	FormattedPath  string            `json:"formattedPath,omitempty"`
+	File           string            `json:"file,omitempty"`
+	Line           int               `json:"line,omitempty"`
+	Column         int               `json:"column,omitempty"`
+	Tags           map[string]string `json:"tags,omitempty"`
+	SourceLocation []Location        `json:"sourceLocation,omitempty"`
+}
+
+type Location struct {
+	File   string `json:"file,omitempty"`
+	Line   int    `json:"line,omitempty"`
+	Column int    `json:"column,omitempty"`
 }
 
 type ScanAnalytics struct {
@@ -183,11 +191,22 @@ func vulnerabilitiesFromEngineResults(results *engine.Results, includePassed boo
 					}
 
 					if len(resource.Location) > 0 {
-						location := resource.Location[0]
+						location := resource.Location[0] //location of the resource definition
 						vulnerability.Resource.File = location.Filepath
 						vulnerability.Resource.Line = location.Line
 						vulnerability.Resource.Column = location.Column
 					}
+
+					// add the location traces of the resource, first element being the location of the resource definition
+					var sourceLocation []Location
+					for _, loc := range resource.Location {
+						sourceLocation = append(sourceLocation, Location{
+							File:   loc.Filepath,
+							Line:   loc.Line,
+							Column: loc.Column,
+						})
+					}
+					vulnerability.Resource.SourceLocation = sourceLocation
 
 					if result.Input.Resources != nil {
 						if resourcesByType, typeExists := result.Input.Resources[resource.Type]; typeExists {
@@ -213,6 +232,21 @@ func vulnerabilitiesFromEngineResults(results *engine.Results, includePassed boo
 						vulnerability.Resource.File = location.Filepath
 						vulnerability.Resource.Line = location.Line
 						vulnerability.Resource.Column = location.Column
+
+						// add the location of the attribute to the location trace
+						// if the attribute was explicitly specified in the resource -> new location to add to the trace
+						// if the attribute wasn't explicitly specified in the resource -> same location as the resource, already the first element of the trace
+						if len(resource.Location) > 0 && !sameLocation(*attribute.Location, resource.Location[0]) {
+							attributeLocation := []Location{
+								{
+									File:   location.Filepath,
+									Line:   location.Line,
+									Column: location.Column,
+								},
+							}
+							sourceLocation = append(attributeLocation, vulnerability.Resource.SourceLocation...)
+							vulnerability.Resource.SourceLocation = sourceLocation
+						}
 					}
 
 					*vulnerabilitiesToAddTo = append(*vulnerabilitiesToAddTo, vulnerability)
@@ -369,4 +403,8 @@ var requiresInputPrefix = map[string]bool{
 	"SNYK-CC-TF-19": true,
 	"SNYK-CC-TF-45": true,
 	"SNYK-CC-TF-46": true,
+}
+
+func sameLocation(loc1, loc2 models.SourceLocation) bool {
+	return loc1.Filepath == loc2.Filepath && loc1.Line == loc2.Line && loc1.Column == loc2.Column
 }
