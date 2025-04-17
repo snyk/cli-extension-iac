@@ -57,6 +57,7 @@ func (p *ShareResults) getTarget(projectName string) registry.Target {
 
 	return registry.Target{
 		RemoteUrl: formattedOriginUrl,
+		Name:      projectName,
 	}
 }
 

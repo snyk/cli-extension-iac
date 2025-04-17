@@ -113,6 +113,7 @@ func (p *SnykPlatformClient) ShareResultsRegistry(ctx context.Context, engineRes
 		ProjectBusinessCriticality: opts.ProjectBusinessCriticality,
 		ProjectLifecycle:           opts.ProjectLifecycle,
 		ProjectTags:                opts.ProjectTags,
+		TargetReference:            opts.Branch,
 	}
 
 	response, err := shareResults.ShareResults(engineResults, opts.OrgPublicID)
