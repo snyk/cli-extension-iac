@@ -76,7 +76,7 @@ func (c Command) RunWithError() (bool, error) {
 		isSuccessful = true
 	}
 
-	err := c.print(c.scan())
+	err := c.print(output)
 	if err != nil {
 		return isSuccessful, err
 	}

@@ -571,6 +571,7 @@ func TestConvertResultsToEnvelopeScanResult(t *testing.T) {
 				},
 				Target: registry.Target{
 					RemoteUrl: "http://github.com/test/remote-repo-url.git",
+					Name:      "Project Name",
 				},
 			},
 		},
