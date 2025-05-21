@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	giturls "github.com/whilp/git-urls"
+	"github.com/snyk/cli-extension-iac/internal/git"
 )
 
 func (p *ResultsProcessor) readWorkingDirectoryName() (string, error) {
@@ -89,11 +89,7 @@ var (
 )
 
 func getProjectNameFromGitOriginUrl(url string) (string, error) {
-	gitURL, err := giturls.Parse(url)
-	if err != nil {
-		return "", err
-	}
-
+	gitURL := git.ParseUrl(url)
 	if match := azureDevOpsPathRegexp.FindStringSubmatch(gitURL.Path); match != nil {
 		return fmt.Sprintf("%s/%s/%s", match[1], match[2], match[3]), nil
 	}

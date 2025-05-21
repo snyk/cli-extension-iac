@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	giturls "github.com/whilp/git-urls"
+	"github.com/snyk/cli-extension-iac/internal/git"
 )
 
 // The function below is based on:
@@ -14,11 +14,7 @@ func formatOriginUrl(originUrl string) (string, error) {
 		return "", nil
 	}
 
-	parsedUrl, err := giturls.Parse(originUrl)
-	if err != nil {
-		return "", err
-	}
-
+	parsedUrl := git.ParseUrl(originUrl)
 	if parsedUrl.Host != "" && parsedUrl.Scheme != "" && isAllowedScheme(parsedUrl.Scheme) {
 		return fmt.Sprintf("%s://%s/%s", "http", strings.Trim(parsedUrl.Host, "/"), strings.Trim(parsedUrl.Path, "/")), nil
 	}
