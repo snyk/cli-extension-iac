@@ -15,7 +15,6 @@ require (
 	github.com/spf13/afero v1.11.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.10.0
-	github.com/whilp/git-urls v1.0.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
