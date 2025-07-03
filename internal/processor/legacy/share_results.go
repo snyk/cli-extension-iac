@@ -46,9 +46,14 @@ func (p *ShareResults) ShareResults(scanResults *results.Results, orgPublicID st
 
 	tags := p.formatTags()
 
+	envelopScanResults, err := p.convertResultsToEnvelopeScanResult(*scanResults, p.ProjectName, p.Policy)
+	if err != nil {
+		return nil, fmt.Errorf("convert results to envelope scan result: %v", err)
+	}
+
 	shareResultsRequest := registry.ShareResultsRequest{
 		// there is only one ScanResult, but we send an array for backwards compatibility
-		ScanResults:  []registry.ScanResult{p.convertResultsToEnvelopeScanResult(*scanResults, p.ProjectName, p.Policy)},
+		ScanResults:  []registry.ScanResult{envelopScanResults},
 		Contributors: contributors,
 		Attributes:   &attributes,
 		Org:          orgPublicID,
