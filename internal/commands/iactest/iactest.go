@@ -197,6 +197,7 @@ func runNewEngine(ictx workflow.InvocationContext, inputPaths []string, cwd stri
 		ResultsProcessor:        &resultsProcessor,
 		SnykCloudEnvironment:    config.GetString(FlagSnykCloudEnvironment),
 		SnykClient:              cloudapiClient,
+		RegistryClient:          registryClient,
 		Scan:                    config.GetString(FlagScan),
 		DetectionDepth:          config.GetInt(FlagDepthDetection),
 		VarFile:                 config.GetString(FlagVarFile),

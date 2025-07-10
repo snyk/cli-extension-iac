@@ -18,6 +18,7 @@ import (
 
 	"github.com/snyk/cli-extension-iac/internal/cloudapi"
 	"github.com/snyk/cli-extension-iac/internal/engine"
+	"github.com/snyk/cli-extension-iac/internal/registry"
 	"github.com/snyk/cli-extension-iac/internal/results"
 	"github.com/snyk/cli-extension-iac/internal/settings"
 )
@@ -48,6 +49,7 @@ type Command struct {
 	ResultsProcessor        ResultsProcessor
 	SnykCloudEnvironment    string
 	SnykClient              cloudapi.Client
+	RegistryClient          *registry.Client
 	Scan                    string
 	DetectionDepth          int
 	VarFile                 string
@@ -100,6 +102,16 @@ func (c Command) scan() scanOutput {
 
 	if !userSettings.Entitlements.InfrastructureAsCode {
 		return output.addScanErrors(errEntitlementInfrastructureAsCodeNotEnabled)
+	}
+
+	if c.IacNewEngine {
+		usage := c.RegistryClient.TrackUsage(ctx, userSettings.OrgPublicID)
+
+		if usage.TestLimitReached {
+			return output.addScanErrors(testLimitReached)
+		} else if usage.Err != nil {
+			c.Logger.Error().Err(usage.Err).Msg(unableToTrackUsage.Message)
+		}
 	}
 
 	paths, err := normalizePaths(c.Paths)
