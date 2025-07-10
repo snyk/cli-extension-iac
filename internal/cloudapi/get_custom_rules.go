@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/snyk/error-catalog-golang-public/snyk_errors"
 	"github.com/snyk/policy-engine/pkg/bundle"
 )
 
@@ -25,7 +26,18 @@ func (c *ClientImpl) customRules(ctx context.Context, url string) (readers []bun
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		var tmp snyk_errors.Error
+		if ok := errors.As(err, &tmp); !ok {
+			return nil, err
+		}
+
+		switch tmp.StatusCode {
+		case http.StatusOK:
+		case http.StatusForbidden:
+			return nil, ErrForbidden
+		default:
+			return nil, fmt.Errorf("invalid status code: %d, details: %s", tmp.StatusCode, string(tmp.Detail))
+		}
 	}
 
 	defer func() {
@@ -33,18 +45,6 @@ func (c *ClientImpl) customRules(ctx context.Context, url string) (readers []bun
 			e = err
 		}
 	}()
-
-	if res.StatusCode == http.StatusForbidden {
-		return nil, ErrForbidden
-	}
-
-	if res.StatusCode != http.StatusOK {
-		if body, err := io.ReadAll(res.Body); err != nil {
-			return nil, fmt.Errorf("invalid status code: %v", res.StatusCode)
-		} else {
-			return nil, fmt.Errorf("invalid status code: %d, response body: %s", res.StatusCode, string(body))
-		}
-	}
 
 	var bundles []bundle.Reader
 	tr := tar.NewReader(res.Body)
