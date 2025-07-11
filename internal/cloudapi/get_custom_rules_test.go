@@ -3,11 +3,13 @@ package cloudapi_test
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/snyk/cli-extension-iac/internal/cloudapi"
+	"github.com/snyk/error-catalog-golang-public/snyk_errors"
 	"github.com/snyk/policy-engine/pkg/bundle"
 	"github.com/snyk/policy-engine/pkg/bundle/base"
 	"github.com/stretchr/testify/require"
@@ -227,26 +229,64 @@ func TestGetCustomRulesInternal(t *testing.T) {
 	}
 }
 
-func TestCustomRulesForbidden(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusForbidden)
-	}))
+type mockRoundTripper struct {
+	err error
+}
 
-	defer server.Close()
+func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return nil, m.err
+}
 
-	client := cloudapi.NewClient(cloudapi.ClientConfig{
-		HTTPClient: server.Client(),
-		URL:        server.URL,
-		Version:    "version",
-	})
-
-	{
-		_, err := client.CustomRules(context.Background(), "org-id")
-		require.ErrorIs(t, err, cloudapi.ErrForbidden)
+func TestCustomRulesErrors(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      error
+		expected error
+	}{
+		{
+			name: "forbidden",
+			err: snyk_errors.Error{
+				StatusCode: http.StatusForbidden,
+				Detail:     "forbidden details",
+			},
+			expected: cloudapi.ErrForbidden,
+		},
+		{
+			name: "unauthorized",
+			err: snyk_errors.Error{
+				StatusCode: http.StatusUnauthorized,
+				Detail:     "unauthorized details",
+			},
+			expected: errors.New("invalid status code: 401, details: unauthorized details"),
+		},
+		{
+			name: "not found",
+			err: snyk_errors.Error{
+				StatusCode: http.StatusNotFound,
+				Detail:     "not found details",
+			},
+			expected: errors.New("invalid status code: 404, details: not found details"),
+		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClient := &http.Client{
+				Transport: &mockRoundTripper{
+					err: tt.err,
+				},
+			}
 
-	{
-		_, err := client.CustomRulesInternal(context.Background(), "org-id")
-		require.ErrorIs(t, err, cloudapi.ErrForbidden)
+			client := cloudapi.NewClient(cloudapi.ClientConfig{
+				HTTPClient: mockClient,
+				URL:        "http://dummy-url",
+				Version:    "version",
+			})
+
+			_, err := client.CustomRules(context.Background(), "org-id")
+			require.EqualError(t, err, tt.expected.Error())
+
+			_, err = client.CustomRulesInternal(context.Background(), "org-id")
+			require.EqualError(t, err, tt.expected.Error())
+		})
 	}
 }

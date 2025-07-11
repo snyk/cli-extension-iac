@@ -3,9 +3,12 @@ package cloudapi
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/snyk/error-catalog-golang-public/snyk_errors"
 )
 
 type (
@@ -44,7 +47,16 @@ func (c *ClientImpl) Resources(ctx context.Context, orgID, environmentID, resour
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		var tmp snyk_errors.Error
+		if ok := errors.As(err, &tmp); !ok {
+			return nil, err
+		}
+
+		switch tmp.StatusCode {
+		case http.StatusOK:
+		default:
+			return nil, fmt.Errorf("invalid status code: %d, details: %s", tmp.StatusCode, string(tmp.Detail))
+		}
 	}
 
 	defer func() {
@@ -52,10 +64,6 @@ func (c *ClientImpl) Resources(ctx context.Context, orgID, environmentID, resour
 			e = err
 		}
 	}()
-
-	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("invalid status code: %v", res.StatusCode)
-	}
 
 	var results CollectionDocumentRes
 
