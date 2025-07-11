@@ -6,11 +6,13 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 
 	engine "github.com/snyk/cli-extension-iac/internal/policyengine"
+	"github.com/snyk/error-catalog-golang-public/snyk_errors"
 )
 
 type CreateScanRequest struct {
@@ -79,7 +81,16 @@ func (c *ClientImpl) CreateScan(ctx context.Context, orgID string, request *Crea
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		var tmp snyk_errors.Error
+		if ok := errors.As(err, &tmp); !ok {
+			return nil, err
+		}
+
+		switch tmp.StatusCode {
+		case http.StatusOK:
+		default:
+			return nil, fmt.Errorf("invalid status code: %d, details: %s", tmp.StatusCode, string(tmp.Detail))
+		}
 	}
 
 	defer func() {
@@ -87,10 +98,6 @@ func (c *ClientImpl) CreateScan(ctx context.Context, orgID string, request *Crea
 			e = err
 		}
 	}()
-
-	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("invalid status code: %v", res.StatusCode)
-	}
 
 	responseBody, err := io.ReadAll(res.Body)
 	if err != nil {
