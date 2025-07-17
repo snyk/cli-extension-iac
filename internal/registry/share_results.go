@@ -108,6 +108,7 @@ type Location struct {
 }
 
 type IssueMetadata struct {
+	PublicId       string       `json:"publicId"`
 	Type           string       `json:"type,omitempty"`
 	File           string       `json:"file"`
 	ResourcePath   string       `json:"resourcePath"`

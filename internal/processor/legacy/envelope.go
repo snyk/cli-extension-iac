@@ -1,18 +1,29 @@
 package legacy
 
 import (
+	"github.com/pkg/errors"
+	"github.com/snyk/iac-service/pkg/iacissue"
 	"strings"
 
 	"github.com/snyk/cli-extension-iac/internal/registry"
 	"github.com/snyk/cli-extension-iac/internal/results"
 )
 
-func (p *ShareResults) convertResultsToEnvelopeScanResult(results results.Results, projectName string, policy string) registry.ScanResult {
+func (p *ShareResults) convertResultsToEnvelopeScanResult(results results.Results, projectName string, policy string) (registry.ScanResult, error) {
 	target := p.getTarget(projectName)
 
 	findings := []registry.Finding{}
 	for _, vulnerability := range results.Vulnerabilities {
-		findings = append(findings, convertVulnerabilityToFinding(vulnerability))
+		finding := convertVulnerabilityToFinding(vulnerability)
+		publicId, err := iacissue.GenerateIacIssuePublicId(target.RemoteUrl,
+			finding.Data.Metadata.PublicID,
+			finding.Data.IssueMetadata.File,
+			finding.Data.IssueMetadata.ResourcePath)
+		if err != nil {
+			return registry.ScanResult{}, errors.Wrap(err, "Failed to generate IAC issue public id for finding")
+		}
+		finding.Data.IssueMetadata.PublicId = publicId
+		findings = append(findings, finding)
 	}
 
 	return registry.ScanResult{
@@ -26,7 +37,7 @@ func (p *ShareResults) convertResultsToEnvelopeScanResult(results results.Result
 		Findings:        findings,
 		Target:          target,
 		TargetReference: p.TargetReference,
-	}
+	}, nil
 }
 
 func (p *ShareResults) getTarget(projectName string) registry.Target {
