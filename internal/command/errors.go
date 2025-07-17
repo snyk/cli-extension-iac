@@ -52,8 +52,6 @@ const (
 	errorCodeNoLoadableInput
 	errorCodeFailedToMakeResourcesResolvers
 	errorCodeResourcesResolverError
-	errorCodeTestLimitReached
-	errorCodeUnableToTrackUsage
 )
 
 const (
@@ -101,16 +99,6 @@ var errEntitlementInfrastructureAsCodeNotEnabled = scanError{
 	Fields: map[string]any{
 		"entitlement": "infrastructureAsCode",
 	},
-}
-
-var testLimitReached = scanError{
-	Message: "test limit reached",
-	Code:    errorCodeTestLimitReached,
-}
-
-var unableToTrackUsage = scanError{
-	Message: "unable to track usage",
-	Code:    errorCodeUnableToTrackUsage,
 }
 
 var errReadSettings = scanError{
