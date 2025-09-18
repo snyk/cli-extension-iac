@@ -25,6 +25,7 @@ const (
 	FlagProjectLifecycle           = "project-lifecycle"
 	FlagProjectTags                = "project-tags"
 	FlagRules                      = "rules"
+	FlagExclude                    = "exclude"
 )
 
 func GetIaCTestFlagSet() *pflag.FlagSet {
@@ -58,6 +59,7 @@ func GetIaCTestFlagSet() *pflag.FlagSet {
 	flagSet.String(FlagProjectLifecycle, "", "Set the project lifecycle project attribute to one or more values (comma-separated).")
 	flagSet.String(FlagProjectTags, "", "Set the project tags to one or more values (comma-separated key value pairs with an \"=\" separator).")
 	flagSet.String(FlagRules, "", "Path to a directory containing custom rules.")
+	flagSet.String(FlagExclude, "", "Exclude files or directories from scan (comma-separated, relative to input directory).")
 
 	return flagSet
 }

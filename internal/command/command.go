@@ -8,10 +8,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 
 	"github.com/rs/zerolog"
+	gitignore "github.com/sabhiram/go-gitignore"
+	utils "github.com/snyk/go-application-framework/pkg/utils"
 	"github.com/snyk/policy-engine/pkg/bundle"
 	"github.com/snyk/policy-engine/pkg/version"
 	"github.com/spf13/afero"
@@ -39,11 +42,13 @@ type BundleDownloader interface {
 }
 
 type Command struct {
-	Output                  string
-	Logger                  *zerolog.Logger
-	FS                      afero.Fs
-	Engine                  Engine
-	Paths                   []string
+	Output string
+	Logger *zerolog.Logger
+	FS     afero.Fs
+	Engine Engine
+	Paths  []string
+	// Exclude holds comma-split patterns (relative to input directory) to exclude from scan
+	Exclude                 []string
 	Bundle                  string
 	ResultsProcessor        ResultsProcessor
 	SnykCloudEnvironment    string
@@ -122,6 +127,16 @@ func (c Command) scan() scanOutput {
 		return output.addScanErrors(errNoPaths)
 	}
 
+	// Apply user-provided exclusions (relative to input directory)
+	enginePaths, err := c.applyExclusions(validPaths)
+	if err != nil {
+		c.Logger.Error().Err(err).Msg("apply exclusions")
+		return output.addScanErrors(errScan)
+	}
+	if len(enginePaths) == 0 {
+		return output.addScanErrors(errNoPaths)
+	}
+
 	bundle, err := c.openBundle()
 	if err != nil {
 		return output.addScanErrors(errOpenBundle)
@@ -133,7 +148,7 @@ func (c Command) scan() scanOutput {
 	}
 
 	engineResults, engineAnalytics, engineErrors, engineWarnings := c.Engine.Run(ctx, engine.RunOptions{
-		Paths:                validPaths,
+		Paths:                enginePaths,
 		SnykBundle:           bundle,
 		CustomRuleBundles:    customRules,
 		OrgPublicID:          userSettings.OrgPublicID,
@@ -346,4 +361,95 @@ func (c nopCloser) Write(p []byte) (n int, err error) {
 
 func (c nopCloser) Close() error {
 	return nil
+}
+
+// applyExclusions expands directories to files and filters out excluded items using the
+// go-application-framework FileFilter plus user-provided exclude patterns.
+func (c Command) applyExclusions(paths []string) ([]string, error) {
+	// If no excludes specified, return original paths
+	if len(c.Exclude) == 0 {
+		return paths, nil
+	}
+
+	// Build a combined list of files from each path, then filter by globs
+	var result []string
+
+	// Translate user exclude strings into glob rules relative to each input path
+	buildUserGlobs := func(root string) []string {
+		var globs []string
+		for _, rule := range c.Exclude {
+			trimmed := strings.TrimSpace(rule)
+			if trimmed == "" {
+				continue
+			}
+			// Convert a relative rule like "dir" or "a/b.tf" into recursive globs
+			// similar to parseIgnoreRuleToGlobs behavior, but minimal: match both the
+			// path itself and everything under it.
+			base := filepath.ToSlash(filepath.Join(root, trimmed))
+			globs = append(globs, base)
+			globs = append(globs, base+"/**")
+		}
+		return globs
+	}
+
+	for _, p := range paths {
+		abs := p
+		// normalize to absolute based on OS working dir for file filter
+		if !filepath.IsAbs(p) {
+			if a, err := filepath.Abs(p); err == nil {
+				abs = a
+			}
+		}
+
+		filter := utils.NewFileFilter(abs, c.Logger)
+
+		// Gather default rules from dotfiles
+		globs, err := filter.GetRules([]string{".gitignore", ".snyk"})
+		if err != nil {
+			return nil, err
+		}
+		// Append user-provided rules as absolute-globs based on root
+		globs = append(globs, buildUserGlobs(abs)...)
+
+		info, err := c.FS.Stat(abs)
+		if err != nil {
+			return nil, err
+		}
+		if info.IsDir() {
+			files := filter.GetAllFiles()
+			filtered := filter.GetFilteredFiles(files, globs)
+			for f := range filtered {
+				// keep as relative to cwd as expected by engine.normalizePaths step already done
+				// here f is absolute; convert to relative to current working directory
+				cwd, _ := os.Getwd()
+				if rel, err := filepath.Rel(cwd, f); err == nil {
+					result = append(result, rel)
+				} else {
+					result = append(result, f)
+				}
+			}
+		} else {
+			// Single file: check if excluded using matcher
+			matcher := gitignore.CompileIgnoreLines(globs...)
+			if !matcher.MatchesPath(abs) {
+				cwd, _ := os.Getwd()
+				if rel, err := filepath.Rel(cwd, abs); err == nil {
+					result = append(result, rel)
+				} else {
+					result = append(result, abs)
+				}
+			}
+		}
+	}
+
+	// De-duplicate
+	seen := map[string]struct{}{}
+	dedup := make([]string, 0, len(result))
+	for _, r := range result {
+		if _, ok := seen[r]; !ok {
+			seen[r] = struct{}{}
+			dedup = append(dedup, r)
+		}
+	}
+	return dedup, nil
 }

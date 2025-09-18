@@ -3,6 +3,7 @@ version: 2.1
 orbs:
   go: snyk/go@1.1.0
   prodsec: snyk/prodsec-orb@1
+  win: circleci/windows@5.0.0
 
 base_image: &base_image
   resource_class: small
@@ -10,11 +11,22 @@ base_image: &base_image
     - image: cimg/go:1.23
 
 jobs:
-  unit-test:
+  unit-test-linux:
     <<: *base_image
     steps:
       - checkout
       - run: go test ./...
+  unit-test-windows:
+    executor:
+      name: win/default
+      shell: powershell.exe -ExecutionPolicy Bypass
+    steps:
+      - checkout
+      - run: |
+          choco install golang --version=1.23.0 -y
+          refreshenv
+          go version
+          go test ./...
   lint:
     <<: *base_image
     resource_class: medium
@@ -48,7 +60,9 @@ workflows:
           name: Security Scans
           context:
             - analysis-iac
-      - unit-test:
-          name: Unit Test
+      - unit-test-linux:
+          name: Unit Test (Linux)
+      - unit-test-windows:
+          name: Unit Test (Windows)
       - lint:
           name: Linting
