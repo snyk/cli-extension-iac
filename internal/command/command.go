@@ -401,15 +401,9 @@ func (c Command) applyExclusions(paths []string) ([]string, error) {
 			}
 		}
 
-		filter := utils.NewFileFilter(abs, c.Logger)
-
-		// Gather default rules from dotfiles
-		globs, err := filter.GetRules([]string{".gitignore", ".snyk"})
-		if err != nil {
-			return nil, err
-		}
-		// Append user-provided rules as absolute-globs based on root
-		globs = append(globs, buildUserGlobs(abs)...)
+        filter := utils.NewFileFilter(abs, c.Logger)
+        // Only use user-provided rules; do not include .gitignore or .snyk rules here
+        globs := buildUserGlobs(abs)
 
 		info, err := c.FS.Stat(abs)
 		if err != nil {
