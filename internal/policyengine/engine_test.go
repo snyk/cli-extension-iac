@@ -138,9 +138,11 @@ func TestHidden(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			path := filepath.Join(dir, name)
 
-            // On Windows, mark any dot-prefixed entries under the fixture as hidden
-            // so behavior matches POSIX dot-hidden semantics.
-            hideDotEntries(t, path)
+			// On Windows, mark any dot-prefixed entries under the fixture as hidden
+			// so behavior matches POSIX dot-hidden semantics. No-op on POSIX.
+			if runtime.GOOS == "windows" {
+				hideDotEntries(t, path)
+			}
 
 			results, errs := runEngine(t, engine.RunOptions{
 				FS:    afero.NewOsFs(),
@@ -262,9 +264,4 @@ func setHidden(t *testing.T, p string) {
 	// On non-Windows, this is a no-op; on Windows, the helper in
 	// engine_hidden_windows_test.go will be built and used by tests invoking
 	// setHidden prior to scanning.
-}
-
-func hideDotEntries(t *testing.T, root string) {
-    t.Helper()
-    // On Windows, use platform helper; on other platforms, nothing to do
 }

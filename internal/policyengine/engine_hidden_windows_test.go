@@ -3,12 +3,12 @@
 package engine_test
 
 import (
-	"syscall"
-	"testing"
-	"unsafe"
 	"io/fs"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"testing"
+	"unsafe"
 )
 
 func setHiddenWindows(t *testing.T, p string) {
@@ -32,16 +32,16 @@ func setHiddenWindows(t *testing.T, p string) {
 
 // hideDotEntriesWindows marks any dot-prefixed files or directories under root as hidden
 func hideDotEntriesWindows(t *testing.T, root string) {
-    t.Helper()
-    _ = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-        if err != nil {
-            return nil
-        }
-        if strings.HasPrefix(d.Name(), ".") {
-            setHiddenWindows(t, path)
-        }
-        return nil
-    })
+	t.Helper()
+	_ = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if strings.HasPrefix(d.Name(), ".") {
+			setHiddenWindows(t, path)
+		}
+		return nil
+	})
 }
 
 // Bridge functions called from platform-agnostic tests
