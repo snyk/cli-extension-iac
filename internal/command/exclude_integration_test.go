@@ -65,17 +65,10 @@ func TestExcludeFiltering_OSSingleRoot(t *testing.T) {
 	require.Equal(t, 0, cmd.Run())
 
 	// verify keep.tf included, excluded files absent
-	contains := func(s []string, needle string) bool {
-		for _, v := range s {
-			if v == needle {
-				return true
-			}
-		}
-		return false
-	}
-	require.True(t, contains(capturedPaths, filepath.ToSlash(filepath.Join("root", "a", "keep.tf"))))
-	require.False(t, contains(capturedPaths, filepath.ToSlash(filepath.Join("root", "b", "file2.tf"))))
-	require.False(t, contains(capturedPaths, filepath.ToSlash(filepath.Join("root", "a", "file1.tf"))))
+	norm := normalizeToSlash(capturedPaths)
+	require.Contains(t, norm, filepath.ToSlash(filepath.Join("root", "a", "keep.tf")))
+	require.NotContains(t, norm, filepath.ToSlash(filepath.Join("root", "b", "file2.tf")))
+	require.NotContains(t, norm, filepath.ToSlash(filepath.Join("root", "a", "file1.tf")))
 }
 
 func TestExcludeFiltering_OSMultiRoot(t *testing.T) {
@@ -121,18 +114,11 @@ func TestExcludeFiltering_OSMultiRoot(t *testing.T) {
 
 	require.Equal(t, 0, cmd.Run())
 
-	contains := func(needle string) bool {
-		for _, v := range capturedPaths {
-			if v == needle {
-				return true
-			}
-		}
-		return false
-	}
-	require.True(t, contains(filepath.ToSlash(filepath.Join("root1", "keep", "main.tf"))))
-	require.True(t, contains(filepath.ToSlash(filepath.Join("root2", "keep", "main.tf"))))
-	require.False(t, contains(filepath.ToSlash(filepath.Join("root1", "node_modules", "ignore.tf"))))
-	require.False(t, contains(filepath.ToSlash(filepath.Join("root2", ".terraform", "ignore.tf"))))
+	norm := normalizeToSlash(capturedPaths)
+	require.Contains(t, norm, filepath.ToSlash(filepath.Join("root1", "keep", "main.tf")))
+	require.Contains(t, norm, filepath.ToSlash(filepath.Join("root2", "keep", "main.tf")))
+	require.NotContains(t, norm, filepath.ToSlash(filepath.Join("root1", "node_modules", "ignore.tf")))
+	require.NotContains(t, norm, filepath.ToSlash(filepath.Join("root2", ".terraform", "ignore.tf")))
 }
 
 func TestExcludeFiltering_WindowsBackslashes(t *testing.T) {
@@ -173,16 +159,9 @@ func TestExcludeFiltering_WindowsBackslashes(t *testing.T) {
 
 	require.Equal(t, 0, cmd.Run())
 
-	contains := func(needle string) bool {
-		for _, v := range capturedPaths {
-			if v == needle {
-				return true
-			}
-		}
-		return false
-	}
-	require.True(t, contains(filepath.ToSlash(filepath.Join("root", "a", "keep.tf"))))
-	require.False(t, contains(filepath.ToSlash(filepath.Join("root", "a", "file1.tf"))))
+	norm := normalizeToSlash(capturedPaths)
+	require.Contains(t, norm, filepath.ToSlash(filepath.Join("root", "a", "keep.tf")))
+	require.NotContains(t, norm, filepath.ToSlash(filepath.Join("root", "a", "file1.tf")))
 }
 
 func withinDir(t *testing.T, dir string) {
@@ -191,4 +170,12 @@ func withinDir(t *testing.T, dir string) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = os.Chdir(prev) })
 	require.NoError(t, os.Chdir(dir))
+}
+
+func normalizeToSlash(in []string) []string {
+	out := make([]string, 0, len(in))
+	for _, p := range in {
+		out = append(out, filepath.ToSlash(p))
+	}
+	return out
 }

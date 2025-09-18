@@ -141,6 +141,9 @@ func (c Command) scan() scanOutput {
 	if err != nil {
 		return output.addScanErrors(errOpenBundle)
 	}
+	if bundle != nil {
+		defer func() { _ = bundle.Close() }()
+	}
 
 	customRules, err := c.customRuleBundles(ctx, userSettings.OrgPublicID)
 	if err != nil {
@@ -401,9 +404,9 @@ func (c Command) applyExclusions(paths []string) ([]string, error) {
 			}
 		}
 
-        filter := utils.NewFileFilter(abs, c.Logger)
-        // Only use user-provided rules; do not include .gitignore or .snyk rules here
-        globs := buildUserGlobs(abs)
+		filter := utils.NewFileFilter(abs, c.Logger)
+		// Only use user-provided rules; do not include .gitignore or .snyk rules here
+		globs := buildUserGlobs(abs)
 
 		info, err := c.FS.Stat(abs)
 		if err != nil {
