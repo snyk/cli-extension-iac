@@ -413,13 +413,13 @@ func (c Command) applyExclusions(paths []string) ([]string, error) {
 			return nil, err
 		}
 		if info.IsDir() {
-			files := filter.GetAllFiles()
-			filtered := filter.GetFilteredFiles(files, globs)
+            files := filter.GetAllFiles()
+            filtered := filter.GetFilteredFiles(files, globs)
 			for f := range filtered {
 				// keep as relative to cwd as expected by engine.normalizePaths step already done
 				// here f is absolute; convert to relative to current working directory
-				cwd, _ := os.Getwd()
-				if rel, err := filepath.Rel(cwd, f); err == nil {
+                cwd, _ := os.Getwd()
+                if rel, err := filepath.Rel(cwd, f); err == nil {
 					result = append(result, rel)
 				} else {
 					result = append(result, f)
@@ -427,8 +427,8 @@ func (c Command) applyExclusions(paths []string) ([]string, error) {
 			}
 		} else {
 			// Single file: check if excluded using matcher
-			matcher := gitignore.CompileIgnoreLines(globs...)
-			if !matcher.MatchesPath(abs) {
+            matcher := gitignore.CompileIgnoreLines(globs...)
+            if !matcher.MatchesPath(filepath.ToSlash(abs)) {
 				cwd, _ := os.Getwd()
 				if rel, err := filepath.Rel(cwd, abs); err == nil {
 					result = append(result, rel)
