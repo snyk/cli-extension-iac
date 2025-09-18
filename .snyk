@@ -1,0 +1,8 @@
+# Snyk policy file
+version: v1.25.0
+ignore:
+  SNYK-GOLANG-GOLANGORGXCRYPTOSSHAGENT-12668891:
+    - '*':
+        reason: "Transient dependency; no remediation available. Ignored until upstream fix is published."
+        expires: "2026-03-01T00:00:00.000Z"
+patch: {}
