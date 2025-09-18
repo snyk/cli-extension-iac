@@ -21,4 +21,4 @@ snyk iac test --exclude=dir-to-skip,subdir/file.tf
 snyk iac test --exclude "dir-to-skip,subdir/file.tf"
 ```
 
-The exclusion is applied in addition to existing ignore mechanisms (such as `.gitignore` and `.snyk`).
+Only user-provided exclude patterns are applied by this flag.
