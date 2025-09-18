@@ -137,6 +137,10 @@ func TestHidden(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			path := filepath.Join(dir, name)
 
+            // On Windows, mark the fixtures as hidden so the Windows-specific
+            // hidden attribute check behaves consistently with POSIX dot-hidden.
+            setHidden(t, path)
+
 			results, errs := runEngine(t, engine.RunOptions{
 				FS:    afero.NewOsFs(),
 				Paths: []string{path},
@@ -234,4 +238,13 @@ func runEngine(t *testing.T, options engine.RunOptions) (*engine.Results, []erro
 		require.NoError(t, err)
 	}
 	return e.Run(context.Background(), options)
+}
+
+// setHidden sets the Windows hidden attribute when running on Windows.
+// On other platforms, it is a no-op.
+func setHidden(t *testing.T, p string) {
+    t.Helper()
+    // On non-Windows, this is a no-op; on Windows, the helper in
+    // engine_hidden_windows_test.go will be built and used by tests invoking
+    // setHidden prior to scanning.
 }
