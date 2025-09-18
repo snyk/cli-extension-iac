@@ -8,7 +8,7 @@ orbs:
 base_image: &base_image
   resource_class: small
   docker:
-    - image: cimg/go:1.23
+    - image: cimg/go:1.24
 
 jobs:
   unit-test-linux:
@@ -23,7 +23,7 @@ jobs:
     steps:
       - checkout
       - run: |
-          choco install golang --version=1.23.0 -y
+          choco install golang --version=1.24.7 -y
           refreshenv
           go version
           go test ./...
