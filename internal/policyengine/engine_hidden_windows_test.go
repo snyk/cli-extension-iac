@@ -6,6 +6,9 @@ import (
 	"syscall"
 	"testing"
 	"unsafe"
+	"io/fs"
+	"path/filepath"
+	"strings"
 )
 
 func setHiddenWindows(t *testing.T, p string) {
@@ -26,3 +29,20 @@ func setHiddenWindows(t *testing.T, p string) {
 	attrs := uint32(r1) | FILE_ATTRIBUTE_HIDDEN
 	_, _, _ = setFA.Call(uintptr(unsafe.Pointer(ptr)), uintptr(attrs))
 }
+
+// hideDotEntriesWindows marks any dot-prefixed files or directories under root as hidden
+func hideDotEntriesWindows(t *testing.T, root string) {
+    t.Helper()
+    _ = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+        if err != nil {
+            return nil
+        }
+        if strings.HasPrefix(d.Name(), ".") {
+            setHiddenWindows(t, path)
+        }
+        return nil
+    })
+}
+
+// Bridge functions called from platform-agnostic tests
+func hideDotEntries(t *testing.T, root string) { hideDotEntriesWindows(t, root) }

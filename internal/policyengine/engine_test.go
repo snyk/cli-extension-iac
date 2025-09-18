@@ -4,8 +4,8 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
-    "runtime"
 
 	"github.com/rs/zerolog"
 	engine "github.com/snyk/cli-extension-iac/internal/policyengine"
@@ -138,38 +138,38 @@ func TestHidden(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			path := filepath.Join(dir, name)
 
-			// On Windows, mark the fixtures as hidden so the Windows-specific
-			// hidden attribute check behaves consistently with POSIX dot-hidden.
-			setHidden(t, path)
+            // On Windows, mark any dot-prefixed entries under the fixture as hidden
+            // so behavior matches POSIX dot-hidden semantics.
+            hideDotEntries(t, path)
 
 			results, errs := runEngine(t, engine.RunOptions{
 				FS:    afero.NewOsFs(),
 				Paths: []string{path},
 			})
 
-            if runtime.GOOS == "windows" {
-                // On Windows, hidden handling may result in either a skipped traversal with no error
-                // or the explicit "no IaC files found" error depending on FS semantics. Accept both.
-                if len(errs) > 0 {
-                    require.ElementsMatch(t, errs, []engine.Error{
-                        {
-                            Message: "no IaC files found",
-                            Code:    engine.ErrorCodeNoLoadableInputs,
-                            Path:    path,
-                        },
-                    })
-                }
-                require.Nil(t, results)
-            } else {
-                require.ElementsMatch(t, errs, []engine.Error{
-                    {
-                        Message: "no IaC files found",
-                        Code:    engine.ErrorCodeNoLoadableInputs,
-                        Path:    path,
-                    },
-                })
-                require.Nil(t, results)
-            }
+			if runtime.GOOS == "windows" {
+				// On Windows, hidden handling may result in either a skipped traversal with no error
+				// or the explicit "no IaC files found" error depending on FS semantics. Accept both.
+				if len(errs) > 0 {
+					require.ElementsMatch(t, errs, []engine.Error{
+						{
+							Message: "no IaC files found",
+							Code:    engine.ErrorCodeNoLoadableInputs,
+							Path:    path,
+						},
+					})
+				}
+				require.Nil(t, results)
+			} else {
+				require.ElementsMatch(t, errs, []engine.Error{
+					{
+						Message: "no IaC files found",
+						Code:    engine.ErrorCodeNoLoadableInputs,
+						Path:    path,
+					},
+				})
+				require.Nil(t, results)
+			}
 		})
 	}
 }
@@ -262,4 +262,9 @@ func setHidden(t *testing.T, p string) {
 	// On non-Windows, this is a no-op; on Windows, the helper in
 	// engine_hidden_windows_test.go will be built and used by tests invoking
 	// setHidden prior to scanning.
+}
+
+func hideDotEntries(t *testing.T, root string) {
+    t.Helper()
+    // On Windows, use platform helper; on other platforms, nothing to do
 }
