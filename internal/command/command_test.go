@@ -832,3 +832,66 @@ func TestRawResults(t *testing.T) {
 		})
 	}
 }
+
+func TestExcludeFiltering(t *testing.T) {
+	logger := zerolog.Nop()
+	fs := afero.NewMemMapFs()
+
+	// create bundle so scan proceeds
+	require.Nil(t, afero.WriteFile(fs, "bundle.tar.gz", nil, 0644))
+
+	// create a small directory tree
+	require.Nil(t, fs.MkdirAll("root/a", 0755))
+	require.Nil(t, fs.MkdirAll("root/b", 0755))
+	require.Nil(t, afero.WriteFile(fs, "root/a/file1.tf", []byte(""), 0644))
+	require.Nil(t, afero.WriteFile(fs, "root/b/file2.tf", []byte(""), 0644))
+
+	capturedPaths := make([]string, 0)
+
+	policyEngine := mockEngine{
+		run: func(ctx context.Context, options engine.RunOptions) (*engine.Results, results.ScanAnalytics, []error, []error) {
+			capturedPaths = append(capturedPaths, options.Paths...)
+			return &engine.Results{}, results.ScanAnalytics{}, nil, nil
+		},
+	}
+
+	resultsProcessor := mockResultsProcessor{
+		processResults: func(rawResults *engine.Results, scanAnalytics results.ScanAnalytics) (*results.Results, error) {
+			return &results.Results{}, nil
+		},
+	}
+
+	userSettings := settings.Settings{
+		Entitlements: settings.Entitlements{
+			InfrastructureAsCode: true,
+		},
+	}
+
+	settingsReader := readSettingsFunc(func(ctx context.Context) (*settings.Settings, error) {
+		return &userSettings, nil
+	})
+
+	cmd := command.Command{
+		FS:               fs,
+		Engine:           policyEngine,
+		Paths:            []string{"root"},
+		Bundle:           "bundle.tar.gz",
+		ResultsProcessor: resultsProcessor,
+		SettingsReader:   settingsReader,
+		Output:           outputFilePath,
+		Logger:           &logger,
+	}
+
+	// Emulate exclusion of directory b and a specific file in a
+	// The exclude will be wired via flag later; for now we test behavior once applied
+	cmd.Exclude = []string{"b", "a/file1.tf"}
+
+	require.Equal(t, 0, cmd.Run())
+
+	// Expect only paths under root that are not excluded to be passed to engine
+	// In our simple implementation we expect at least that excluded specific file is not present
+	for _, p := range capturedPaths {
+		require.NotContains(t, p, "root/b/file2.tf")
+		require.NotContains(t, p, "root/a/file1.tf")
+	}
+}

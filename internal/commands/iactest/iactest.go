@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
@@ -193,6 +194,7 @@ func runNewEngine(ictx workflow.InvocationContext, inputPaths []string, cwd stri
 		Engine:                  &policyEngine,
 		FS:                      fs,
 		Paths:                   inputPaths,
+		Exclude:                 parseExcludeFlag(config.GetString(FlagExclude)),
 		Bundle:                  config.GetString(RulesBundlePath),
 		ResultsProcessor:        &resultsProcessor,
 		SnykCloudEnvironment:    config.GetString(FlagSnykCloudEnvironment),
@@ -215,4 +217,19 @@ func runNewEngine(ictx workflow.InvocationContext, inputPaths []string, cwd stri
 	}
 
 	return outputFile, nil
+}
+
+func parseExcludeFlag(v string) []string {
+	if strings.TrimSpace(v) == "" {
+		return nil
+	}
+	parts := strings.Split(v, ",")
+	var out []string
+	for _, p := range parts {
+		s := strings.TrimSpace(p)
+		if s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
 }

@@ -3,6 +3,8 @@ package command
 import (
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -41,6 +43,10 @@ func TestNormalizePaths(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			// symlinks are not a thing on windows
+			if runtime.GOOS == "windows" && strings.Contains(test.name, "linked") {
+				t.Skip("skipping on windows")
+			}
 			input, err := filepath.Abs(test.input)
 			if err != nil {
 				t.Fatal(err)

@@ -56,9 +56,10 @@ func createTestFiles(t *testing.T, baseDir string, files []string) {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			t.Fatalf("failed to create directories: %v", err)
 		}
-		_, err := os.Create(fullPath)
+		f, err := os.Create(fullPath)
 		if err != nil {
 			t.Fatalf("failed to create file %s: %v", fullPath, err)
 		}
+		_ = f.Close()
 	}
 }
