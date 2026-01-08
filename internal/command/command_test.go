@@ -98,6 +98,7 @@ func (c *mockCloudApiClient) Resources(ctx context.Context, orgID, environmentID
 var outputFilePath = "test.json"
 
 func TestNoPaths(t *testing.T) {
+	logger := zerolog.Nop()
 	fs := afero.NewMemMapFs()
 	_, _ = fs.Create(outputFilePath)
 
@@ -123,6 +124,7 @@ func TestNoPaths(t *testing.T) {
 		Bundle:           "bundle.tar.gz",
 		ResultsProcessor: resultsProcessor,
 		SettingsReader:   settingsReader,
+		Logger:           &logger,
 	}
 
 	require.Equal(t, 0, cmd.Run())
@@ -134,6 +136,7 @@ func TestNoPaths(t *testing.T) {
 }
 
 func TestCurrentWorkingDirectoryTraversal(t *testing.T) {
+	logger := zerolog.Nop()
 	fs := afero.NewMemMapFs()
 	_, _ = fs.Create(outputFilePath)
 
@@ -160,6 +163,7 @@ func TestCurrentWorkingDirectoryTraversal(t *testing.T) {
 		Bundle:           "bundle.tar.gz",
 		ResultsProcessor: resultsProcessor,
 		SettingsReader:   settingsReader,
+		Logger:           &logger,
 	}
 
 	require.Equal(t, 0, cmd.Run())
@@ -179,6 +183,7 @@ func TestCurrentWorkingDirectoryTraversal(t *testing.T) {
 }
 
 func TestNoBundle(t *testing.T) {
+	logger := zerolog.Nop()
 	fs := afero.NewMemMapFs()
 	_, _ = fs.Create(outputFilePath)
 
@@ -216,6 +221,7 @@ func TestNoBundle(t *testing.T) {
 		SettingsReader:          settingsReader,
 		BundleDownloader:        bundleDownloader,
 		ReadPolicyEngineVersion: readPolicyEngineVersion,
+		Logger:                  &logger,
 	}
 
 	require.Equal(t, 0, cmd.Run())

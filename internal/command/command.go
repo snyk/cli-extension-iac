@@ -25,6 +25,8 @@ import (
 	"github.com/snyk/cli-extension-iac/internal/settings"
 )
 
+var ErrPathNotAllowed = errors.New("the --exclude argument must be a comma separated list of directory or file names and cannot contain a path.")
+
 type Engine interface {
 	Run(ctx context.Context, options engine.RunOptions) (*engine.Results, results.ScanAnalytics, []error, []error)
 }
@@ -76,21 +78,14 @@ func (c Command) Run() int {
 
 func (c Command) RunWithError() (bool, error) {
 	output := c.scan()
-	isSuccessful := false
-	if len(output.scanErrors) == 0 {
-		isSuccessful = true
+	isSuccessful := len(output.scanErrors) == 0
+
+	printErr := c.print(output)
+	if printErr != nil {
+		return false, printErr
 	}
-
-	err := c.print(output)
-	if err != nil {
-		return isSuccessful, err
-	}
-
-	isSuccessful = false
-
 	return isSuccessful, nil
 }
-
 func (c Command) scan() scanOutput {
 	var output scanOutput
 	ctx := context.Background()
@@ -376,23 +371,9 @@ func (c Command) applyExclusions(paths []string) ([]string, error) {
 
 	// Build a combined list of files from each path, then filter by globs
 	var result []string
-
-	// Translate user exclude strings into glob rules relative to each input path
-	buildUserGlobs := func(root string) []string {
-		var globs []string
-		for _, rule := range c.Exclude {
-			trimmed := strings.TrimSpace(rule)
-			if trimmed == "" {
-				continue
-			}
-			// Convert a relative rule like "dir" or "a/b.tf" into recursive globs
-			// similar to parseIgnoreRuleToGlobs behavior, but minimal: match both the
-			// path itself and everything under it.
-			base := filepath.ToSlash(filepath.Join(root, trimmed))
-			globs = append(globs, base)
-			globs = append(globs, base+"/**")
-		}
-		return globs
+	userExcludeRules, err := buildExclusionGlobs(strings.Join(c.Exclude, ","))
+	if err != nil {
+		return []string{}, err
 	}
 
 	for _, p := range paths {
@@ -405,16 +386,13 @@ func (c Command) applyExclusions(paths []string) ([]string, error) {
 		}
 
 		filter := utils.NewFileFilter(abs, c.Logger)
-		// Only use user-provided rules; do not include .gitignore or .snyk rules here
-		globs := buildUserGlobs(abs)
-
 		info, err := c.FS.Stat(abs)
 		if err != nil {
 			return nil, err
 		}
 		if info.IsDir() {
 			files := filter.GetAllFiles()
-			filtered := filter.GetFilteredFiles(files, globs)
+			filtered := filter.GetFilteredFiles(files, userExcludeRules)
 			for f := range filtered {
 				// keep as relative to cwd as expected by engine.normalizePaths step already done
 				// here f is absolute; convert to relative to current working directory
@@ -427,7 +405,7 @@ func (c Command) applyExclusions(paths []string) ([]string, error) {
 			}
 		} else {
 			// Single file: check if excluded using matcher
-			matcher := gitignore.CompileIgnoreLines(globs...)
+			matcher := gitignore.CompileIgnoreLines(userExcludeRules...)
 			if !matcher.MatchesPath(filepath.ToSlash(abs)) {
 				cwd, _ := os.Getwd()
 				if rel, err := filepath.Rel(cwd, abs); err == nil {
@@ -449,4 +427,36 @@ func (c Command) applyExclusions(paths []string) ([]string, error) {
 		}
 	}
 	return dedup, nil
+}
+
+// BuildExclusionGlobs converts a comma-separated string into global glob patterns.
+// It enforces basename matching (matching the name anywhere in the tree)
+// rather than path-based matching, ensuring consistency with snyk test.
+func buildExclusionGlobs(rawExcludeFlag string) ([]string, error) {
+	if rawExcludeFlag == "" {
+		return []string{}, nil
+	}
+
+	rawEntries := strings.Split(rawExcludeFlag, ",")
+	// Pre-allocate space for the double-glob patterns
+	patterns := make([]string, 0, len(rawEntries)*2)
+
+	for _, entry := range rawEntries {
+		trimmed := strings.TrimSpace(entry)
+		if trimmed == "" {
+			continue
+		}
+
+		// Strictly forbid paths. This ensures we are doing basename matching.
+		if strings.ContainsAny(trimmed, "/\\") {
+			return nil, ErrPathNotAllowed
+		}
+
+		// Create global patterns to match the basename at any depth.
+		// Using **/ ensures 'dir1' matches './dir1' and './src/dir1'.
+		patterns = append(patterns, "**/"+trimmed)
+		patterns = append(patterns, "**/"+trimmed+"/**")
+	}
+
+	return patterns, nil
 }
