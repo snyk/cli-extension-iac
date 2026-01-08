@@ -143,13 +143,18 @@ func TestExcludeFiltering_ErrorOnPaths(t *testing.T) {
 		Bundle:           "bundle.tar.gz",
 		ResultsProcessor: resultsProcessor,
 		SettingsReader:   settingsReader,
+		Output:           outputFilePath,
 		Logger:           &logger,
 		// This will trigger an ErrPathNotAllowed
 		Exclude: []string{"a/file1.tf"},
 	}
 
 	exitCode := cmd.Run()
-	assert.Equal(t, 1, exitCode, "Command should exit with 1 when invalid exclude paths are provided")
+	assert.Equal(t, 0, exitCode, "Command should exit with 0 when invalid exclude paths are provided")
+	requireError(t, cmd.FS, scanError{
+		Message: "the --exclude argument must be a comma separated list of directory or file names and cannot contain a path",
+		Code:    2001,
+	})
 }
 
 func withinDir(t *testing.T, dir string) {

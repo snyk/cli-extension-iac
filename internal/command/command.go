@@ -126,6 +126,9 @@ func (c Command) scan() scanOutput {
 	enginePaths, err := c.applyExclusions(validPaths)
 	if err != nil {
 		c.Logger.Error().Err(err).Msg("apply exclusions")
+		if errors.Is(err, ErrPathNotAllowed) {
+			return output.addScanErrors(errNoValidExcludes)
+		}
 		return output.addScanErrors(errScan)
 	}
 	if len(enginePaths) == 0 {
