@@ -94,7 +94,6 @@ func (c Command) scan() scanOutput {
 	}
 
 	output = output.setSettings(userSettings)
-
 	if !userSettings.Entitlements.InfrastructureAsCode {
 		return output.addScanErrors(errEntitlementInfrastructureAsCodeNotEnabled)
 	}
@@ -106,7 +105,6 @@ func (c Command) scan() scanOutput {
 	}
 
 	var validPaths []string
-
 	for _, path := range paths {
 		if strings.Contains(path, "..") {
 			output = output.addScanErrors(cwdTraversalError(path))
@@ -120,7 +118,8 @@ func (c Command) scan() scanOutput {
 	}
 
 	// Apply user-provided exclusions (relative to input directory)
-	enginePaths, err := c.applyExclusions(validPaths)
+	cwd, _ := os.Getwd()
+	enginePaths, err := applyExclusions(c.Exclude, c.FS, c.Logger, validPaths, cwd)
 	if err != nil {
 		c.Logger.Error().Err(err).Msg("apply exclusions")
 		if errors.Is(err, ErrPathNotAllowed) {

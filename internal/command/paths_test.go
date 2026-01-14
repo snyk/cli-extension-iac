@@ -1,9 +1,6 @@
 package command
 
 import (
-	"context"
-	"encoding/json"
-	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -11,241 +8,10 @@ import (
 	"testing"
 
 	"github.com/rs/zerolog"
-	"github.com/snyk/cli-extension-iac/internal/cloudapi"
-	"github.com/snyk/cli-extension-iac/internal/engine"
-	"github.com/snyk/cli-extension-iac/internal/results"
-	"github.com/snyk/cli-extension-iac/internal/settings"
-	"github.com/snyk/policy-engine/pkg/bundle"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-type mockEngine struct {
-	run func(ctx context.Context, options engine.RunOptions) (*engine.Results, results.ScanAnalytics, []error, []error)
-}
-
-func (e mockEngine) Run(ctx context.Context, options engine.RunOptions) (*engine.Results, results.ScanAnalytics, []error, []error) {
-	return e.run(ctx, options)
-}
-
-type mockResultsProcessor struct {
-	processResults func(rawResults *engine.Results, scanAnalytics results.ScanAnalytics) (*results.Results, error)
-}
-
-func (m mockResultsProcessor) ProcessResults(rawResults *engine.Results, scanAnalytics results.ScanAnalytics) (*results.Results, error) {
-	return m.processResults(rawResults, scanAnalytics)
-}
-
-type readSettingsFunc func(ctx context.Context) (*settings.Settings, error)
-
-func (f readSettingsFunc) ReadSettings(ctx context.Context) (*settings.Settings, error) {
-	return f(ctx)
-}
-
-type downloadBundleFunc func(peVersion string, w io.Writer) error
-
-func (f downloadBundleFunc) DownloadLatestBundle(peVersion string, w io.Writer) error {
-	return f(peVersion, w)
-}
-
-type mockCloudApiClient struct {
-	customRules  func(ctx context.Context, orgID string) (readers []bundle.Reader, e error)
-	createScan   func(ctx context.Context, orgID string, request *cloudapi.CreateScanRequest, useInternalEndpoint bool) (*cloudapi.CreateScanResponse, error)
-	environments func(ctx context.Context, orgID, snykCloudEnvironmentID string) (envs []cloudapi.EnvironmentObject, e error)
-	resources    func(ctx context.Context, orgID, environmentID, resourceType, resourceKind string) (resources []cloudapi.ResourceObject, e error)
-}
-
-func (c *mockCloudApiClient) CustomRules(ctx context.Context, orgID string) (readers []bundle.Reader, e error) {
-	if c.customRules == nil {
-		return nil, nil
-	}
-	return c.customRules(ctx, orgID)
-}
-
-func (c *mockCloudApiClient) CustomRulesInternal(ctx context.Context, orgID string) (readers []bundle.Reader, e error) {
-	if c.customRules == nil {
-		return nil, nil
-	}
-	return c.customRules(ctx, orgID)
-}
-
-func (c *mockCloudApiClient) CreateScan(ctx context.Context, orgID string, request *cloudapi.CreateScanRequest, useInternalEndpoint bool) (*cloudapi.CreateScanResponse, error) {
-	if c.createScan == nil {
-		return nil, nil
-	}
-	return c.createScan(ctx, orgID, request, useInternalEndpoint)
-}
-
-func (c *mockCloudApiClient) Environments(ctx context.Context, orgID, snykCloudEnvironmentID string) (envs []cloudapi.EnvironmentObject, e error) {
-	if c.environments == nil {
-		return nil, nil
-	}
-	return c.environments(ctx, orgID, snykCloudEnvironmentID)
-}
-
-func (c *mockCloudApiClient) Resources(ctx context.Context, orgID, environmentID, resourceType, resourceKind string) (resources []cloudapi.ResourceObject, e error) {
-	if c.resources == nil {
-		return nil, nil
-	}
-	return c.resources(ctx, orgID, environmentID, resourceType, resourceKind)
-}
-
-var outputFilePath = "test.json"
-
-func TestExcludeFiltering_OSSingleRoot(t *testing.T) {
-	logger := zerolog.Nop()
-
-	workspace := t.TempDir()
-	withinDir(t, workspace)
-
-	// Create bundle file expected by command
-	require.NoError(t, os.WriteFile("bundle.tar.gz", nil, 0644))
-
-	// Create test tree
-	require.NoError(t, os.MkdirAll(filepath.Join("root", "a"), 0755))
-	require.NoError(t, os.MkdirAll(filepath.Join("root", "b"), 0755))
-	require.NoError(t, os.WriteFile(filepath.Join("root", "a", "file1.tf"), []byte(""), 0644))
-	require.NoError(t, os.WriteFile(filepath.Join("root", "a", "keep.tf"), []byte(""), 0644))
-	require.NoError(t, os.WriteFile(filepath.Join("root", "b", "file2.tf"), []byte(""), 0644))
-
-	capturedPaths := make([]string, 0)
-	policyEngine := mockEngine{
-		run: func(ctx context.Context, options engine.RunOptions) (*engine.Results, results.ScanAnalytics, []error, []error) {
-			capturedPaths = append(capturedPaths, options.Paths...)
-			return &engine.Results{}, results.ScanAnalytics{}, nil, nil
-		},
-	}
-	resultsProcessor := mockResultsProcessor{
-		processResults: func(rawResults *engine.Results, scanAnalytics results.ScanAnalytics) (*results.Results, error) {
-			return &results.Results{}, nil
-		},
-	}
-	userSettings := settings.Settings{Entitlements: settings.Entitlements{InfrastructureAsCode: true}}
-	settingsReader := readSettingsFunc(func(ctx context.Context) (*settings.Settings, error) { return &userSettings, nil })
-
-	cmd := Command{
-		FS:               afero.NewOsFs(),
-		Engine:           policyEngine,
-		Paths:            []string{filepath.Join("root")},
-		Bundle:           "bundle.tar.gz",
-		ResultsProcessor: resultsProcessor,
-		SettingsReader:   settingsReader,
-		Output:           outputFilePath,
-		Logger:           &logger,
-		// Only basenames are allowed. Paths like "a/file1.tf" would trigger an error.
-		Exclude: []string{"b", "file1.tf"},
-	}
-
-	require.Equal(t, 0, cmd.Run())
-
-	// verify keep.tf included, excluded files absent
-	norm := normalizeToSlash(capturedPaths)
-	require.Contains(t, norm, filepath.ToSlash(filepath.Join("root", "a", "keep.tf")))
-	require.NotContains(t, norm, filepath.ToSlash(filepath.Join("root", "b", "file2.tf")))
-	require.NotContains(t, norm, filepath.ToSlash(filepath.Join("root", "a", "file1.tf")))
-}
-
-func TestExcludeFiltering_OSMultiRoot(t *testing.T) {
-	logger := zerolog.Nop()
-	workspace := t.TempDir()
-	withinDir(t, workspace)
-	require.NoError(t, os.WriteFile("bundle.tar.gz", nil, 0644))
-
-	// Create two roots under the same workspace
-	for _, root := range []string{"root1", "root2"} {
-		require.NoError(t, os.MkdirAll(filepath.Join(root, "keep"), 0755))
-		require.NoError(t, os.MkdirAll(filepath.Join(root, "node_modules"), 0755))
-		require.NoError(t, os.MkdirAll(filepath.Join(root, ".terraform"), 0755))
-		require.NoError(t, os.WriteFile(filepath.Join(root, "keep", "main.tf"), []byte(""), 0644))
-		require.NoError(t, os.WriteFile(filepath.Join(root, "node_modules", "ignore.tf"), []byte(""), 0644))
-		require.NoError(t, os.WriteFile(filepath.Join(root, ".terraform", "ignore.tf"), []byte(""), 0644))
-	}
-
-	capturedPaths := make([]string, 0)
-	policyEngine := mockEngine{
-		run: func(ctx context.Context, options engine.RunOptions) (*engine.Results, results.ScanAnalytics, []error, []error) {
-			capturedPaths = append(capturedPaths, options.Paths...)
-			return &engine.Results{}, results.ScanAnalytics{}, nil, nil
-		},
-	}
-	resultsProcessor := mockResultsProcessor{processResults: func(rawResults *engine.Results, scanAnalytics results.ScanAnalytics) (*results.Results, error) {
-		return &results.Results{}, nil
-	}}
-	userSettings := settings.Settings{Entitlements: settings.Entitlements{InfrastructureAsCode: true}}
-	settingsReader := readSettingsFunc(func(ctx context.Context) (*settings.Settings, error) { return &userSettings, nil })
-
-	cmd := Command{
-		FS:               afero.NewOsFs(),
-		Engine:           policyEngine,
-		Paths:            []string{"root1", "root2"},
-		Bundle:           "bundle.tar.gz",
-		ResultsProcessor: resultsProcessor,
-		SettingsReader:   settingsReader,
-		Output:           outputFilePath,
-		Logger:           &logger,
-		Exclude:          []string{"node_modules", ".terraform"},
-	}
-
-	require.Equal(t, 0, cmd.Run())
-
-	norm := normalizeToSlash(capturedPaths)
-	require.Contains(t, norm, filepath.ToSlash(filepath.Join("root1", "keep", "main.tf")))
-	require.Contains(t, norm, filepath.ToSlash(filepath.Join("root2", "keep", "main.tf")))
-	require.NotContains(t, norm, filepath.ToSlash(filepath.Join("root1", "node_modules", "ignore.tf")))
-	require.NotContains(t, norm, filepath.ToSlash(filepath.Join("root2", ".terraform", "ignore.tf")))
-}
-
-func TestExcludeFiltering_ErrorOnPaths(t *testing.T) {
-	logger := zerolog.Nop()
-	workspace := t.TempDir()
-	withinDir(t, workspace)
-	require.NoError(t, os.MkdirAll("root", 0755))
-	require.NoError(t, os.WriteFile("bundle.tar.gz", nil, 0644))
-
-	resultsProcessor := mockResultsProcessor{
-		processResults: func(rawResults *engine.Results, scanAnalytics results.ScanAnalytics) (*results.Results, error) {
-			return &results.Results{}, nil
-		},
-	}
-	userSettings := settings.Settings{Entitlements: settings.Entitlements{InfrastructureAsCode: true}}
-	settingsReader := readSettingsFunc(func(ctx context.Context) (*settings.Settings, error) { return &userSettings, nil })
-
-	cmd := Command{
-		FS:               afero.NewOsFs(),
-		Paths:            []string{"root"},
-		Bundle:           "bundle.tar.gz",
-		ResultsProcessor: resultsProcessor,
-		SettingsReader:   settingsReader,
-		Output:           outputFilePath,
-		Logger:           &logger,
-		// This will trigger an ErrPathNotAllowed
-		Exclude: []string{"a/file1.tf"},
-	}
-
-	exitCode := cmd.Run()
-	assert.Equal(t, 0, exitCode, "Command should exit with 0 when invalid exclude paths are provided")
-	requireError(t, cmd.FS, scanError{
-		Message: "the --exclude argument must be a comma separated list of directory or file names and cannot contain a path",
-		Code:    2001,
-	})
-}
-
-func withinDir(t *testing.T, dir string) {
-	t.Helper()
-	prev, err := os.Getwd()
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = os.Chdir(prev) })
-	require.NoError(t, os.Chdir(dir))
-}
-
-func normalizeToSlash(in []string) []string {
-	out := make([]string, 0, len(in))
-	for _, p := range in {
-		out = append(out, filepath.ToSlash(p))
-	}
-	return out
-}
 
 func TestNormalizePaths(t *testing.T) {
 	tests := []struct {
@@ -323,13 +89,8 @@ func TestExclusion_MultiRoot(t *testing.T) {
 	root1 := filepath.Join(tmpDir, "proj1")
 	root2 := filepath.Join(tmpDir, "proj2")
 
-	cmd := Command{
-		FS:      afero.NewOsFs(),
-		Logger:  &logger,
-		Exclude: []string{"exclude_me"},
-	}
-
-	results, err := cmd.applyExclusions([]string{root1, root2})
+	cwd, _ := os.Getwd()
+	results, err := applyExclusions([]string{"exclude_me"}, afero.NewOsFs(), &logger, []string{root1, root2}, cwd)
 	require.NoError(t, err)
 
 	assert.Len(t, results, 1)
@@ -345,13 +106,8 @@ func TestExclusion_FileVsDir(t *testing.T) {
 	tmpDir := setupTempDir(t, files)
 	root := filepath.Join(tmpDir, "workdir")
 
-	cmd := Command{
-		FS:      afero.NewOsFs(),
-		Logger:  &logger,
-		Exclude: []string{"ignore.tf"},
-	}
-
-	results, err := cmd.applyExclusions([]string{root})
+	cwd, _ := os.Getwd()
+	results, err := applyExclusions([]string{"ignore.tf"}, afero.NewOsFs(), &logger, []string{root}, cwd)
 	require.NoError(t, err)
 
 	require.Len(t, results, 1)
@@ -422,6 +178,136 @@ func Test_buildExclusionGlobs(t *testing.T) {
 	}
 }
 
+func Test_applyExclusions(t *testing.T) {
+	logger := zerolog.Nop()
+	fs := afero.NewOsFs()
+
+	files := map[string]string{
+		"README.md":                 "content",
+		"file2":                     "content",
+		"src/main.go":               "content",
+		"src/file2":                 "content",
+		"src/ignore_dir/data.txt":   "content",
+		"src/keep_dir/file2":        "content",
+		"src/keep_dir/valuable.txt": "content",
+		"libs/ignore_dir/lib.so":    "content",
+	}
+
+	tmpDir := setupTempDir(t, files)
+	tests := []struct {
+		name          string
+		inputPaths    []string
+		excludeRules  []string
+		expectedPaths []string
+		expectError   bool
+	}{
+		{
+			name:         "Exclude Directory Name Recursively",
+			inputPaths:   []string{"."},
+			excludeRules: []string{"ignore_dir"},
+			expectedPaths: []string{
+				"README.md",
+				"file2",
+				"src/main.go",
+				"src/file2",
+				"src/keep_dir/file2",
+				"src/keep_dir/valuable.txt",
+			},
+		},
+		{
+			name:         "Exclude File Name Recursively",
+			inputPaths:   []string{"."},
+			excludeRules: []string{"file2"},
+			expectedPaths: []string{
+				"README.md",
+				"src/main.go",
+				"src/ignore_dir/data.txt",
+				"src/keep_dir/valuable.txt",
+				"libs/ignore_dir/lib.so",
+			},
+		},
+		{
+			name:         "Exclude Multiple Names",
+			inputPaths:   []string{"."},
+			excludeRules: []string{"file2", "ignore_dir"},
+			expectedPaths: []string{
+				"README.md",
+				"src/main.go",
+				"src/keep_dir/valuable.txt",
+			},
+		},
+		{
+			name:         "Exclude Invalid Path (Error)",
+			inputPaths:   []string{"."},
+			excludeRules: []string{"src/ignore_dir"},
+			expectError:  true,
+		},
+		{
+			name:         "Specific Input Path with Exclusion",
+			inputPaths:   []string{"src/keep_dir"},
+			excludeRules: []string{"file2"},
+			expectedPaths: []string{
+				"src/keep_dir/valuable.txt",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Resolve input paths to absolute
+			var absInputs []string
+			for _, p := range tt.inputPaths {
+				absInputs = append(absInputs, filepath.Join(tmpDir, p))
+			}
+
+			got, err := applyExclusions(tt.excludeRules, fs, &logger, absInputs, tmpDir)
+
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				// Normalize OS separators for assertions
+				var normalizedExpected []string
+				for _, p := range tt.expectedPaths {
+					normalizedExpected = append(normalizedExpected, filepath.FromSlash(p))
+				}
+				assert.ElementsMatch(t, normalizedExpected, got)
+			}
+		})
+	}
+}
+
+func Test_HelperFunctions(t *testing.T) {
+	t.Run("resolveAbs", func(t *testing.T) {
+		abs, _ := filepath.Abs(".")
+		assert.Equal(t, abs, resolveAbs(abs))
+
+		rel := "foo/bar"
+		resolved := resolveAbs(rel)
+		assert.True(t, filepath.IsAbs(resolved), "Expected relative path to become absolute")
+		assert.Contains(t, resolved, filepath.Clean(rel))
+	})
+
+	t.Run("deduplicatePaths", func(t *testing.T) {
+		input := []string{"a", "b", "a", "c", "b"}
+		expected := []string{"a", "b", "c"}
+		assert.Equal(t, expected, deduplicatePaths(input))
+
+		assert.Empty(t, deduplicatePaths([]string{}))
+	})
+
+	t.Run("makeRelative", func(t *testing.T) {
+		cwd := filepath.FromSlash("/user/project")
+		inputPath := filepath.FromSlash("/user/project/src/main.go")
+
+		// Happy path
+		assert.Equal(t, filepath.FromSlash("src/main.go"), makeRelative(inputPath, cwd))
+		// Fallback path
+		unrelated := filepath.FromSlash("/etc/hosts")
+		assert.NotEmpty(t, makeRelative(unrelated, cwd))
+	})
+}
+
 func withCurrentWorkingDirectory(t *testing.T, cwd string) {
 	t.Helper()
 
@@ -466,25 +352,4 @@ func setupTempDir(t *testing.T, files map[string]string) string {
 		_ = os.WriteFile(fullPath, []byte(content), 0o600)
 	}
 	return canonicalPath
-}
-
-func requireError(t *testing.T, fs afero.Fs, expected scanError) {
-	t.Helper()
-
-	var output struct {
-		Errors []scanError
-	}
-
-	readOutput(t, fs, &output)
-
-	require.Contains(t, output.Errors, expected)
-}
-
-func readOutput(t *testing.T, fs afero.Fs, output any) {
-	t.Helper()
-
-	data, err := afero.ReadFile(fs, outputFilePath)
-	require.NoError(t, err)
-
-	require.NoError(t, json.Unmarshal(data, output))
 }
