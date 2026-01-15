@@ -26,6 +26,7 @@ type scanError struct {
 
 const (
 	errorCodeNoPaths errorCode = 2000 + iota
+	errorCodeInvalidExcludes
 )
 
 const (
@@ -71,6 +72,11 @@ const (
 var errNoPaths = scanError{
 	Message: "no valid paths",
 	Code:    errorCodeNoPaths,
+}
+
+var errNoValidExcludes = scanError{
+	Message: "the --exclude argument must be a comma separated list of directory or file names and cannot contain a path",
+	Code:    errorCodeInvalidExcludes,
 }
 
 var errOpenBundle = scanError{

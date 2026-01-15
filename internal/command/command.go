@@ -8,13 +8,10 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"runtime/debug"
 	"strings"
 
 	"github.com/rs/zerolog"
-	gitignore "github.com/sabhiram/go-gitignore"
-	utils "github.com/snyk/go-application-framework/pkg/utils"
 	"github.com/snyk/policy-engine/pkg/bundle"
 	"github.com/snyk/policy-engine/pkg/version"
 	"github.com/spf13/afero"
@@ -24,6 +21,8 @@ import (
 	"github.com/snyk/cli-extension-iac/internal/results"
 	"github.com/snyk/cli-extension-iac/internal/settings"
 )
+
+var ErrPathNotAllowed = errors.New("the --exclude argument must be a comma separated list of directory or file names and cannot contain a path.")
 
 type Engine interface {
 	Run(ctx context.Context, options engine.RunOptions) (*engine.Results, results.ScanAnalytics, []error, []error)
@@ -76,21 +75,14 @@ func (c Command) Run() int {
 
 func (c Command) RunWithError() (bool, error) {
 	output := c.scan()
-	isSuccessful := false
-	if len(output.scanErrors) == 0 {
-		isSuccessful = true
+	isSuccessful := len(output.scanErrors) == 0
+
+	printErr := c.print(output)
+	if printErr != nil {
+		return false, printErr
 	}
-
-	err := c.print(output)
-	if err != nil {
-		return isSuccessful, err
-	}
-
-	isSuccessful = false
-
 	return isSuccessful, nil
 }
-
 func (c Command) scan() scanOutput {
 	var output scanOutput
 	ctx := context.Background()
@@ -102,7 +94,6 @@ func (c Command) scan() scanOutput {
 	}
 
 	output = output.setSettings(userSettings)
-
 	if !userSettings.Entitlements.InfrastructureAsCode {
 		return output.addScanErrors(errEntitlementInfrastructureAsCodeNotEnabled)
 	}
@@ -114,7 +105,6 @@ func (c Command) scan() scanOutput {
 	}
 
 	var validPaths []string
-
 	for _, path := range paths {
 		if strings.Contains(path, "..") {
 			output = output.addScanErrors(cwdTraversalError(path))
@@ -128,9 +118,13 @@ func (c Command) scan() scanOutput {
 	}
 
 	// Apply user-provided exclusions (relative to input directory)
-	enginePaths, err := c.applyExclusions(validPaths)
+	cwd, _ := os.Getwd()
+	enginePaths, err := applyExclusions(c.Exclude, c.FS, c.Logger, validPaths, cwd)
 	if err != nil {
 		c.Logger.Error().Err(err).Msg("apply exclusions")
+		if errors.Is(err, ErrPathNotAllowed) {
+			return output.addScanErrors(errNoValidExcludes)
+		}
 		return output.addScanErrors(errScan)
 	}
 	if len(enginePaths) == 0 {
@@ -364,89 +358,4 @@ func (c nopCloser) Write(p []byte) (n int, err error) {
 
 func (c nopCloser) Close() error {
 	return nil
-}
-
-// applyExclusions expands directories to files and filters out excluded items using the
-// go-application-framework FileFilter plus user-provided exclude patterns.
-func (c Command) applyExclusions(paths []string) ([]string, error) {
-	// If no excludes specified, return original paths
-	if len(c.Exclude) == 0 {
-		return paths, nil
-	}
-
-	// Build a combined list of files from each path, then filter by globs
-	var result []string
-
-	// Translate user exclude strings into glob rules relative to each input path
-	buildUserGlobs := func(root string) []string {
-		var globs []string
-		for _, rule := range c.Exclude {
-			trimmed := strings.TrimSpace(rule)
-			if trimmed == "" {
-				continue
-			}
-			// Convert a relative rule like "dir" or "a/b.tf" into recursive globs
-			// similar to parseIgnoreRuleToGlobs behavior, but minimal: match both the
-			// path itself and everything under it.
-			base := filepath.ToSlash(filepath.Join(root, trimmed))
-			globs = append(globs, base)
-			globs = append(globs, base+"/**")
-		}
-		return globs
-	}
-
-	for _, p := range paths {
-		abs := p
-		// normalize to absolute based on OS working dir for file filter
-		if !filepath.IsAbs(p) {
-			if a, err := filepath.Abs(p); err == nil {
-				abs = a
-			}
-		}
-
-		filter := utils.NewFileFilter(abs, c.Logger)
-		// Only use user-provided rules; do not include .gitignore or .snyk rules here
-		globs := buildUserGlobs(abs)
-
-		info, err := c.FS.Stat(abs)
-		if err != nil {
-			return nil, err
-		}
-		if info.IsDir() {
-			files := filter.GetAllFiles()
-			filtered := filter.GetFilteredFiles(files, globs)
-			for f := range filtered {
-				// keep as relative to cwd as expected by engine.normalizePaths step already done
-				// here f is absolute; convert to relative to current working directory
-				cwd, _ := os.Getwd()
-				if rel, err := filepath.Rel(cwd, f); err == nil {
-					result = append(result, rel)
-				} else {
-					result = append(result, f)
-				}
-			}
-		} else {
-			// Single file: check if excluded using matcher
-			matcher := gitignore.CompileIgnoreLines(globs...)
-			if !matcher.MatchesPath(filepath.ToSlash(abs)) {
-				cwd, _ := os.Getwd()
-				if rel, err := filepath.Rel(cwd, abs); err == nil {
-					result = append(result, rel)
-				} else {
-					result = append(result, abs)
-				}
-			}
-		}
-	}
-
-	// De-duplicate
-	seen := map[string]struct{}{}
-	dedup := make([]string, 0, len(result))
-	for _, r := range result {
-		if _, ok := seen[r]; !ok {
-			seen[r] = struct{}{}
-			dedup = append(dedup, r)
-		}
-	}
-	return dedup, nil
 }
