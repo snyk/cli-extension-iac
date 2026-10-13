@@ -8,7 +8,7 @@ orbs:
 base_image: &base_image
   resource_class: small
   docker:
-    - image: cimg/go:1.24
+    - image: cimg/go:1.26
 
 jobs:
   unit-test-linux:
@@ -23,7 +23,7 @@ jobs:
     steps:
       - checkout
       - run: |
-          choco install golang --version=1.24.7 -y
+          choco install golang --version=1.26.6 -y
           refreshenv
           go version
           go test ./...
@@ -32,7 +32,12 @@ jobs:
     resource_class: medium
     steps:
       - checkout
-      - run: golangci-lint run -v ./...
+      - run:
+          name: Install golangci-lint built with the module's Go version
+          command: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
+      - run:
+          name: Run golangci-lint
+          command: "$(go env GOPATH)/bin/golangci-lint run -v ./..."
 
   security-scans:
     <<: *base_image
