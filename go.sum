@@ -453,8 +453,8 @@ github.com/snyk/go-application-framework v0.0.0-20250917164002-527eabced057 h1:H
 github.com/snyk/go-application-framework v0.0.0-20250917164002-527eabced057/go.mod h1:3qfDCCm6WiRb0xfX0fXlBS1sVbAbEsaCPeHEns/QVcA=
 github.com/snyk/go-httpauth v0.0.0-20231117135515-eb445fea7530 h1:s9PHNkL6ueYRiAKNfd8OVxlUOqU3qY0VDbgCD1f6WQY=
 github.com/snyk/go-httpauth v0.0.0-20231117135515-eb445fea7530/go.mod h1:88KbbvGYlmLgee4OcQ19yr0bNpXpOr2kciOthaSzCAg=
-github.com/snyk/policy-engine v1.1.7 h1:qF6BqVSCxCMhPfzQP42uRmP0tY0gFn+fjGJJawB1vEk=
-github.com/snyk/policy-engine v1.1.7/go.mod h1:05zec9grBZpy0TuRYAfMSOlUOU4v00eWySGM/ccSGDw=
+github.com/snyk/policy-engine v1.1.8 h1:3UByH4aMpk43/ji190Tj9nToUnep4g2WI0s+5tK4nnQ=
+github.com/snyk/policy-engine v1.1.8/go.mod h1:05zec9grBZpy0TuRYAfMSOlUOU4v00eWySGM/ccSGDw=
 github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 h1:+jumHNA0Wrelhe64i8F6HNlS8pkoyMv5sreGx2Ry5Rw=
 github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8/go.mod h1:3n1Cwaq1E1/1lhQhtRK2ts/ZwZEhjcQeJQ1RuC6Q/8U=
 github.com/speakeasy-api/jsonpath v0.6.1 h1:FWbuCEPGaJTVB60NZg2orcYHGZlelbNJAcIk/JGnZvo=

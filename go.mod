@@ -12,7 +12,7 @@ require (
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/snyk/error-catalog-golang-public v0.0.0-20250812140843-a01d75260003
 	github.com/snyk/go-application-framework v0.0.0-20250917164002-527eabced057
-	github.com/snyk/policy-engine v1.1.7
+	github.com/snyk/policy-engine v1.1.8
 	github.com/spf13/afero v1.15.0
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.12.1
